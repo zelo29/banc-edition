@@ -317,6 +317,8 @@ précis, révélé seulement après la réussite.
 ## Suite
 
 Le détail, le raisonnement et la frontière : **[ROADMAP.md](ROADMAP.md)**.
+Ce que le banc ne mesurera jamais et qu'il faut savoir quand même :
+**[CULTURE.md](CULTURE.md)**.
 
 1. ~~Le journal des gestes~~
 2. ~~Les trois compteurs~~
@@ -327,7 +329,7 @@ Le détail, le raisonnement et la frontière : **[ROADMAP.md](ROADMAP.md)**.
 7. ~~Le banc de lecture : un fichier inconnu, une question, le chronomètre~~
 8. ~~Le banc de débogage : un symptôme, un extrait, le temps jusqu'à la cause~~
 9. ~~Les domaines voisins : data et sécurité, comme matériau de lecture~~
-10. La répétition : la même épreuve cinq fois d'affilée, la courbe en direct
+10. ~~La répétition : refaire tout de suite ce qu'on vient d'apprendre, sans l'indice~~
 11. La navigation de dépôt : plusieurs fichiers, une question qui oblige à trouver *où*
 12. Le générateur d'épreuves : un lot de plus, validé par exécution avant d'être accepté
 13. Le coach : détection des motifs lents dans le journal

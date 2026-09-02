@@ -34,23 +34,18 @@ en mémoire, les bugs des débogages sont reproduits. Une épreuve dont la répo
 est affirmée plutôt que calculée est signalée nommément par le harnais — il en
 reste quatre, et le fichier les nomme.
 
+**La répétition** est en place, et c'est un mécanisme, pas un banc : une épreuve
+d'édition ratée est refaite tout de suite, sans son indice cette fois, jusqu'à
+trois essais et quatre reprises par séance. Seul le banc d'édition y a droit —
+refaire une lecture dont on connaît déjà la réponse mesurerait la mémoire, et la
+courbe monterait toute seule.
+
 Les domaines voisins — data, sécurité — sont entrés par le banc de lecture, pas
 par un banc à eux. Le pourquoi est plus bas ; c'est une décision, pas un raccourci.
 
 ## À venir, par ordre de valeur
 
-### 1. La répétition
-
-Pas un banc : le mécanisme. La même épreuve cinq fois d'affilée, la courbe en
-direct sous les yeux.
-
-C'est le seul dispositif d'apprentissage moteur qui existe, il est dans cette
-roadmap depuis le premier jour, et il passe désormais en tête pour deux
-raisons : il rend plus efficace **tout** ce qui existe déjà, et c'est la seule
-chose de cette liste que personne d'autre ne peut fournir — elle demande le
-journal des gestes, qui n'existe qu'ici.
-
-### 2. La navigation de dépôt
+### 1. La navigation de dépôt
 
 Plusieurs fichiers, une question qui oblige à trouver *où* : « quelle fonction
 appelle `charger` ? », « où `TIMEOUT` est-il défini ? ».
@@ -60,7 +55,7 @@ arbre. C'est la compétence qui décide de tes deux premières semaines dans une
 équipe. Matériel neuf à construire : un arbre de fichiers navigable et une
 recherche.
 
-### 3. Le générateur d'épreuves
+### 2. Le générateur d'épreuves
 
 **Le vrai plafond de l'outil**, et il s'est rapproché : 46 épreuves, c'est neuf
 séances avant d'avoir tout vu. Aucun banc supplémentaire ne règle ça — c'est un
@@ -74,7 +69,7 @@ reproduit pas, sont rejetés automatiquement.
 C'est le seul endroit de ce projet où faire tourner un agent a du sens : un lot,
 vérifié, quand la bibliothèque s'épuise. Pas une boucle permanente.
 
-### 4. Le coach
+### 3. Le coach
 
 Pas un banc non plus. Il lit le journal des gestes et nomme le motif :
 « tu retapes des lignes entières au lieu de les déplacer »,
@@ -83,7 +78,7 @@ Pas un banc non plus. Il lit le journal des gestes et nomme le motif :
 C'est ce qui transforme une mesure en enseignement. Il attend d'avoir assez de
 journal pour dire quelque chose de vrai — d'où sa place ici et pas plus haut.
 
-### 5. Git
+### 4. Git
 
 Un dépôt dans un état donné, un état cible, on compte les commandes. La mesure
 est exacte — l'état d'un dépôt se compare comme deux chaînes.
@@ -93,7 +88,7 @@ Repoussé ici pour son coût — il faut un git en mémoire (`isomorphic-git`) e
 terminal simulé — et parce que Learn Git Branching couvre déjà l'essentiel
 gratuitement. Fort levier, gros chantier, concurrent sérieux.
 
-### 6. Le terminal
+### 5. Le terminal
 
 Un arbre de fichiers, une question, une réponse exacte : « combien de fichiers
 contiennent X ? ». `grep`, `find`, `sed`, les tubes.
@@ -150,6 +145,13 @@ réécrire.
 Ce que ces outils ont en commun : aucun ne mesure le **geste**, aucun ne
 chronomètre la **compréhension**, et aucun ne tient une progression unique à
 travers les domaines. C'est ce qui reste, et c'est tout le projet.
+
+## La culture, à côté
+
+Tout ce qui échoue au filtre n°1 mais compte quand même — les idées, les textes,
+les livres, ce qu'il faut savoir faire — est dans **[CULTURE.md](CULTURE.md)**.
+Ce n'est pas une consolation : c'est l'autre moitié, et c'est celle qui décide
+de ce qu'on fait du geste une fois qu'il ne coûte plus rien.
 
 ## La frontière
 
