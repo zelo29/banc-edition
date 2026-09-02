@@ -1,6 +1,12 @@
 # Banc d'édition
 
-Mesure **comment tu tapes**, pas seulement si l'exercice est résolu.
+Mesure **comment tu travailles**, pas seulement si l'exercice est résolu.
+
+Trois bancs, une seule séance : **éditer** (la main), **lire** (l'œil) et
+**déboguer** (remonter de l'effet à la cause). La
+séance ne fait pas la différence — elle tire des épreuves, et seul l'écran sait
+laquelle afficher. C'est ce qui a permis d'ajouter le troisième sans retoucher
+le reste.
 
 Monkeytype mesure la frappe brute sans éditeur. Codewars mesure la résolution
 sans regarder l'exécution. VimGolf mesure le geste — mais en vim seulement, en
@@ -10,8 +16,11 @@ avec un retour immédiat.
 ```bash
 npm install
 npm run dev      # http://localhost:5180
-npm run verif    # le contrat d'annotation de CodeMirror
+npm run verif    # le contrat CodeMirror, le score, la séance
 ```
+
+`verif/score.mjs` importe les sources `.ts` telles quelles : il demande Node ≥ 22.18,
+qui retire les types sans transpilation.
 
 ## Comment ça marche
 
@@ -36,6 +45,192 @@ par une chaîne de `isUserEvent` du plus précis au plus général, qui rangeait
 Une sélection au clavier produit un `select` qui n'est **pas** `select.pointer` :
 toute la distinction souris/clavier tient là.
 
+## Le score : ce qu'il fallait faire, contre ce qu'on a fait
+
+Le chronomètre seul récompense de taper vite, pas de taper juste. On mesure donc
+le rapport entre le **minimum théorique** et le **réel** :
+
+- le minimum est la distance d'édition en caractères entre le départ et la
+  cible — exacte, calculée par plus longue sous-séquence commune ;
+- le réel est la somme des caractères insérés et supprimés par les transactions,
+  y compris ceux qu'on tape puis efface aussitôt.
+
+En caractères et non en transactions, volontairement : le minimum en nombre de
+gestes n'est pas calculable — renommer quatre occurrences au multi-curseur, c'est
+une seule transaction qui touche quatre endroits.
+
+Ce que ça attrape, et c'est précisément le défaut à corriger : retaper une ligne
+entière pour changer un mot. Le minimum dit 8 caractères, le réel en compte 60,
+l'efficacité tombe à 0,13.
+
+La même distance sert à la jauge de progression, plutôt qu'un compteur de
+préfixe commun : dès que la première occurrence est corrigée, le préfixe saute à
+la suivante et annonce 45 % du travail fait là où la distance en compte 20.
+
+## La séance
+
+Cinq katas, enchaînés tout seuls, puis un bilan. **Aucun menu, aucun choix.**
+
+C'était le manque principal, et il n'était pas technique : un banc qui mesure
+sans diriger laisse une décision à prendre à chaque ouverture — quel kata,
+combien de fois, jusqu'à quand — et cette décision, payée tous les jours, est
+exactement ce qui empêche l'habitude de se former.
+
+Le tirage n'est pas aléatoire. Il classe, dans cet ordre :
+
+1. **les gestes jamais rencontrés**, du moins cher au plus cher — apprendre
+   passe avant réviser, et la première séance doit être courte ;
+2. **les gestes vus mais pas acquis** — la dette, remboursée en priorité ;
+3. **les gestes acquis**, du plus ancien au plus récent — l'entretien.
+
+Le tri est stable et sans hasard : aucun kata ne peut être oublié indéfiniment.
+
+Le bilan ne retient qu'**un seul geste**, le plus coûteux de la séance. Une liste
+de cinq reproches ne se travaille pas — on repart avec la même chose qu'en
+arrivant, en plus découragé.
+
+## Un raccourci d'application ne doit pas porter un geste de kata
+
+Tab redémarrait le kata. Le kata « Réindenter le bloc » se résout **en appuyant
+sur Tab**. Sur la première séance réelle, un second appui — réflexe normal quand
+on indente — annulait la réussite à peine obtenue : le même kata a été refait
+dix fois de suite avant qu'on passe au suivant.
+
+C'est une règle générale, pas un cas particulier : toute touche que le banc
+enseigne lui appartient. Ne restent à l'application que Ctrl+Entrée
+(recommencer), Entrée (suivant) et Échap hors de l'éditeur.
+
+## La carte des gestes
+
+Le bilan montre où tu en es sur les douze, et pas seulement sur les cinq de la
+séance : tenus, en dette, jamais rencontrés. La dette passe en tête — c'est la
+seule partie sur laquelle on peut agir.
+
+Sans elle, vingt essais accumulés ne se voyaient nulle part, et l'outil ne
+répondait pas à la seule question qui fait revenir : est-ce que je progresse ?
+
+## Enseigner, puis tester
+
+Tant qu'un geste n'est pas acquis, il est **montré avant** le kata. Une fois tenu
+au-dessus de 0,7 d'efficacité sur l'un des trois derniers essais, l'indice
+disparaît et le kata passe en test.
+
+Sans cette moitié, la première rencontre avec un kata était perdue d'avance : on
+le brutalisait à la main, on faisait 12 %, et on n'en repartait pas avec un geste
+appris mais avec une mauvaise note. Le bilan marque « montré » les réussites
+obtenues avec l'indice — elles ne comptent pas comme des gestes tenus.
+
+## Le navigateur vole les raccourcis
+
+Un banc d'édition qui tourne dans un onglet ne possède pas le clavier. Ctrl+J
+ouvre les téléchargements de Firefox, Ctrl+D pose un marque-page, Ctrl+H ouvre
+l'historique — les trois sont des gestes de kata.
+
+Deux couches les reprennent :
+
+- chaque liaison de `raccourcis.ts` porte `preventDefault`, ce qui suffit dès que
+  l'éditeur a le focus ;
+- une garde au niveau de la page couvre le reste, focus perdu compris.
+
+**Ce qui résiste** : les raccourcis des outils de développement (Ctrl+Maj+K,
+Ctrl+Maj+I, F12) sont traités par le navigateur lui-même et ne sont pas
+annulables par la page. Le kata « Retirer les traces » les rencontre. Le seul
+remède est de lancer Firefox en mode kiosque, qui désactive ses propres
+raccourcis.
+
+## CodeMirror n'est pas VS Code
+
+Les katas nomment des raccourcis VS Code. CodeMirror n'en connaît qu'une partie :
+il fournit `moveLineDown`, `deleteLine`, `addCursorBelow`, mais **rien** pour
+Ctrl+D, Ctrl+J, Ctrl+H ni Tab sur une sélection.
+
+Un kata qui annonce un geste que l'éditeur ignore n'entraîne rien : il bloque.
+`raccourcis.ts` comble donc l'écart — `@codemirror/search` pour Ctrl+D et Ctrl+H,
+`closeBrackets` pour entourer une sélection, `indentWithTab` pour Tab, et une
+commande `joindreLignes` écrite à la main, CodeMirror n'ayant pas de `joinLines`.
+
+`verif/gestes.mjs` applique le geste annoncé et exige la cible au caractère près.
+C'est cette vérification qui manquait : sans elle, six katas sur douze nommaient
+un raccourci mort.
+
+`verif/editeur.mjs` va plus loin : il monte le vrai éditeur dans un DOM et lui
+envoie de vrais événements clavier. C'est le seul moyen de vérifier la
+**précédence** — une liaison peut exister et perdre quand même contre
+`defaultKeymap`. C'est lui qui a trouvé le pire défaut du lot : sans
+`EditorState.allowMultipleSelections` ni `drawSelection()`, CodeMirror refuse
+silencieusement toute sélection secondaire. Le multi-curseur ne marchait pas du
+tout, et deux katas de plus étaient morts sans que rien ne le signale.
+
+## Ouvrir un panneau n'est pas finir un geste
+
+Ctrl+H marchait : le panneau de recherche s'ouvrait. Le kata était pourtant
+infaisable, et d'une façon que rien ne signalait.
+
+`searchKeymap` ne lie **ni `replaceAll` ni `replaceNext`** — aucune touche ne
+mène à « remplacer tout ». Et l'ordre du DOM du panneau place trois boutons et
+trois cases à cocher entre le champ « Find » et le champ « Replace » : six
+tabulations pour traverser. Le seul chemin praticable était donc le clic — sur un
+banc qui compte et pénalise chaque `select.pointer`. **Un kata qui punit le seul
+chemin qu'il laisse ouvert n'entraîne pas : il décourage.**
+
+`SearchPanel.keydown` appelle `runScopeHandlers(view, e, "search-panel")` avant
+toute chose : c'est le point d'extension prévu, et `scope` est ce qui fait qu'une
+liaison y est consultée — sans lui, elle vaut pour l'éditeur, où le panneau n'a
+pas le focus.
+
+| Touche | Effet | D'où elle vient |
+|---|---|---|
+| `Ctrl+Alt+Entrée` | remplace tout | ajoutée — c'est le raccourci de VS Code |
+| `Tab` / `Maj+Tab` | passe d'un champ à l'autre | ajoutées, sans retirer le Tab natif |
+| `Entrée` | remplace **une** occurrence | déjà natif — et la différence est ce que le kata enseigne |
+| `Échap` | referme | déjà natif |
+
+Les deux commandes de navigation rendent `false` partout ailleurs : le Tab natif
+reprend alors la main et sort du panneau normalement, boutons compris. On
+n'enlève l'accès clavier à rien, on ajoute le chemin court.
+
+Un détail coûteux au passage : `Ctrl+Entrée` recommence le kata depuis n'importe
+où, et la condition ne regardait pas `altKey`. Le panneau appelle bien
+`preventDefault`, mais il ne stoppe pas la propagation — `Ctrl+Alt+Entrée`
+montait donc jusqu'au gestionnaire de la page, et **le kata redémarrait dans la
+seconde qui suivait le remplacement**, effaçant le travail à l'instant même de la
+réussite.
+
+### Nommer la touche d'entrée ne suffit pas
+
+D'où le champ `etapes` du kata : une suite de `{ touche, effet }`, montrée comme
+l'indice l'était déjà, tant que le geste n'est pas acquis. Le banc dit maintenant
+la suite complète, et `verif/gestes.mjs` vérifie que **chaque touche annoncée est
+réellement liée** — c'est la version généralisée du garde-fou qui avait déjà
+attrapé six raccourcis morts. `verif/editeur.mjs` rejoue la séquence entière dans
+un vrai DOM et exige la cible : le kata est prouvé faisable au clavier seul.
+
+## Le banc de lecture
+
+Comprendre vite un fichier qu'on n'a jamais vu est ce qui sépare les bons
+développeurs, personne ne l'entraîne, et c'est mesurable au chronomètre.
+
+Une lecture = un extrait de code, une question, une réponse courte et exacte —
+un nombre, un mot, un numéro de ligne. Comme pour les katas : pas de runner, pas
+de correcteur, on compare des chaînes. **Une question dont la réponse ne tient
+pas en un mot est une question mal posée.**
+
+La mesure est la même dans son esprit que celle du banc d'édition :
+
+| | banc d'édition | banc de lecture |
+|---|---|---|
+| minimum | la distance d'édition | **une** réponse |
+| réel | les caractères brassés | les réponses données |
+| efficacité | minimum / réel | 1 / tentatives |
+
+Le temps compte, mais c'est le nombre de fausses pistes qui enseigne : il dit si
+tu as lu ou si tu as deviné. Une mauvaise réponse ne punit pas et ne dit pas où
+est l'erreur — le seul retour utile est « relis ».
+
+`verif/lecture.mjs` **exécute** chaque extrait et compare le résultat à la
+réponse annoncée. Un banc de lecture qui corrige faux est pire qu'inutile : il
+enseigne l'erreur.
+
 ## Un kata = deux fichiers
 
 `depart` et `cible`. La cible **est** le test : pas de suite de tests, pas de
@@ -53,9 +248,15 @@ précis, révélé seulement après la réussite.
 
 ## Suite
 
+Le détail, le raisonnement et la frontière : **[ROADMAP.md](ROADMAP.md)**.
+
 1. ~~Le journal des gestes~~
 2. ~~Les trois compteurs~~
 3. ~~Le format de kata~~
-4. Le score : diff minimal entre départ et cible, rapporté au réel
-5. La répétition : le même kata cinq fois, la courbe
-6. Le coach : détection des motifs lents dans le journal
+4. ~~Le score : diff minimal entre départ et cible, rapporté au réel~~
+5. ~~La séance : cinq katas enchaînés, un bilan qui ne retient qu'un geste~~
+6. ~~La carte des gestes : où tu en es sur l'ensemble, pas sur la séance~~
+7. ~~Le banc de lecture : un fichier inconnu, une question, le chronomètre~~
+8. La répétition : la même épreuve cinq fois d'affilée, la courbe en direct
+9. Le banc de débogage : un bug, une pile, le temps jusqu'à la bonne ligne
+10. Le coach : détection des motifs lents dans le journal
