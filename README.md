@@ -231,6 +231,74 @@ est l'erreur — le seul retour utile est « relis ».
 réponse annoncée. Un banc de lecture qui corrige faux est pire qu'inutile : il
 enseigne l'erreur.
 
+## Le temps qui ne court pas la nuit
+
+Le banc d'édition n'a pas ce problème : son journal ne compte que des gestes, et
+une transaction ne se produit pas quand on n'est pas là. Une lecture, elle, n'a
+rien à compter — une horloge partie à l'affichage tourne pendant la nuit et
+enregistre **quatre heures de « lecture » pour un exercice de trente secondes**.
+C'est arrivé, et ça rend la mesure inutilisable.
+
+Le temps ne s'accumule donc que pendant que l'onglet est visible et que la
+dernière activité date de moins de trois minutes. Le seuil est volontairement
+généreux, et c'est le point délicat : lire est précisément l'activité où on ne
+touche à rien. Un seuil serré effacerait du temps de lecture réel, ce qui serait
+pire que le défaut qu'on corrige.
+
+Trois minutes ne prétendent donc pas mesurer la présence — elles **bornent** une
+absence. Quand l'inactivité est constatée, on suspend au moment où elle a été
+acquise, dernière activité plus le seuil, et non à l'instant du constat qui peut
+venir des heures trop tard.
+
+## Data et sécurité : du matériau, pas un banc de plus
+
+Les deux domaines comptent énormément, et ce sont les mieux servis du métier.
+DataLemur et StrataScratch couvrent l'écriture de requêtes ; PortSwigger Web
+Security Academy et pwn.college couvrent l'exploitation, gratuitement et avec
+une validation automatique irréprochable. Écrire ici un banc « écris cette
+requête » ou « trouve cette faille » serait perdre d'avance contre du gratuit.
+
+Mais ces plateformes demandent toutes de **produire** l'attaque ou la requête.
+Aucune ne chronomètre l'autre moitié : relire une requête existante et dire ce
+qu'elle rend, repérer la ligne fautive dans du code ordinaire sans savoir qu'on
+cherche une faille. C'est le banc de lecture, et le domaine n'y change rien — un
+`NOT IN` qui rend zéro ligne se lit comme un `continue` mal placé.
+
+Ils sont donc entrés **comme matériau**, sans une ligne de code d'application :
+
+| lecture | ce qu'elle enseigne |
+|---|---|
+| Le NOT IN qui ne rend rien | un seul NULL dans la sous-requête vide le résultat entier |
+| Le chiffre d'affaires triplé | joindre vers le « plusieurs » duplique le « un » |
+| La moyenne et l'effectif | `AVG` ignore les NULL, `COUNT(*)` non — les deux s'affichent côte à côte |
+| Le classement sans deuxième | `RANK` laisse un trou, `DENSE_RANK` non |
+| Le centime introuvable | 19,99 + 4,99 + 0,02 ne fait pas 25 |
+| La frontière effacée | une requête concaténée n'a plus de frontière entre code et donnée |
+| La racine qui ne retient rien | `path.join` assemble et normalise — il ne confine pas |
+| La clé qui n'en est pas une | écrire dans `__proto__` modifie tous les objets |
+| La ligne qui annule la précédente | un `innerHTML +=` défait le `textContent` d'au-dessus |
+| Le secret effacé trop tard | `rm` ajoute une couche, il n'en retire aucune |
+
+### Le SQL s'exécute aussi
+
+`node:sqlite` est dans Node depuis la 22, donc il n'y avait plus de raison de
+**croire** une réponse SQL. Chaque lecture SQL porte son propre jeu de données,
+le harnais monte la base en mémoire et joue la dernière instruction de
+l'extrait. Les données sont dans l'extrait et non dans le harnais, pour une
+raison de fond : « combien de lignes ? » n'a de réponse que si le lecteur voit
+les données. L'extrait est un script complet, ce qui le rend lisible **et**
+vérifiable par la même occasion.
+
+L'injection SQL est donc réellement jouée : c'est la base qui rend trois jetons.
+Et « tous les jetons » veut dire quelque chose, parce que le harnais recompte la
+table **sans** l'injection, sur le même jeu de données — rejouer la requête
+injectée pour la vérifier n'aurait rien prouvé du tout.
+
+Ce qui reste non exécuté est nommé en fin de sortie : un Dockerfile, un workflow
+CI, une annotation TypeScript et un en-tête HTTP. Quatre sur quarante-six, et le
+harnais les affiche à chaque passage plutôt que de laisser croire à une
+vérification.
+
 ## Un kata = deux fichiers
 
 `depart` et `cible`. La cible **est** le test : pas de suite de tests, pas de
@@ -257,6 +325,16 @@ Le détail, le raisonnement et la frontière : **[ROADMAP.md](ROADMAP.md)**.
 5. ~~La séance : cinq katas enchaînés, un bilan qui ne retient qu'un geste~~
 6. ~~La carte des gestes : où tu en es sur l'ensemble, pas sur la séance~~
 7. ~~Le banc de lecture : un fichier inconnu, une question, le chronomètre~~
-8. La répétition : la même épreuve cinq fois d'affilée, la courbe en direct
-9. Le banc de débogage : un bug, une pile, le temps jusqu'à la bonne ligne
-10. Le coach : détection des motifs lents dans le journal
+8. ~~Le banc de débogage : un symptôme, un extrait, le temps jusqu'à la cause~~
+9. ~~Les domaines voisins : data et sécurité, comme matériau de lecture~~
+10. La répétition : la même épreuve cinq fois d'affilée, la courbe en direct
+11. La navigation de dépôt : plusieurs fichiers, une question qui oblige à trouver *où*
+12. Le générateur d'épreuves : un lot de plus, validé par exécution avant d'être accepté
+13. Le coach : détection des motifs lents dans le journal
+
+Un point a quitté cette liste au lieu d'être barré : **la revue de code**, qui
+en était le prochain. [DiffDojo](https://diffdojo.com/) fait exactement
+l'exercice prévu — des PR réalistes avec défauts plantés, notées contre une
+revue canonique — gratuitement et en mieux. Le filtre n°2 de la roadmap dit de
+ne pas refaire ce que quelqu'un sert déjà mieux ; il ne sert à rien de l'écrire
+si on ne l'applique pas quand ça coûte.
