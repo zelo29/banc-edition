@@ -52,7 +52,6 @@ body {
 }
 
 .titre { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; }
-.kata-num { font-family: var(--mono); color: var(--accent); font-weight: 600; }
 
 .compteurs { display: flex; gap: 1.15rem; align-items: center; font-family: var(--mono); }
 .compteur { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
@@ -106,10 +105,6 @@ body {
   flex-wrap: wrap;
 }
 .reussite strong { color: var(--accent); }
-.geste { color: var(--encre); border-left: 1px solid var(--trait); padding-left: 0.8rem; }
-.courbe { display: inline-flex; align-items: flex-end; gap: 3px; height: 34px; }
-.barre-essai { width: 7px; background: var(--accent); opacity: 0.75; border-radius: 1px; }
-.barre-essai:last-child { opacity: 1; }
 
 kbd {
   font-family: var(--mono);
@@ -124,4 +119,304 @@ kbd {
 @media (max-width: 60rem) {
   .volets { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .volet { border-right: none; border-bottom: 1px solid var(--trait); }
+}
+
+/* --- Score de fin de kata --- */
+.efficacite {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.efficacite small {
+  font-size: 0.55rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faible);
+  font-weight: 400;
+}
+
+.detail { color: var(--attenue); }
+.detail b { color: var(--alerte); font-weight: 600; }
+
+/* --- La seance : les points d'avancement, l'indice, le bilan --- */
+
+/* Cinq points valent mieux qu'un « 3/5 » : l'avancement se lit sans compter,
+   et la fin de seance se voit venir. */
+.points { display: inline-flex; gap: 4px; align-items: center; }
+.points i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--trait);
+  transition: background 140ms;
+}
+.points i.fait { background: var(--accent); opacity: 0.55; }
+.points i.courant { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* L'indice n'apparait que tant que le geste n'est pas acquis. Il est
+   volontairement discret : c'est une aide, pas la reponse -- il nomme la touche,
+   il ne fait pas l'edition. */
+.indice {
+  margin: 0;
+  padding: 0.45rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--encre);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  border-bottom: 1px solid var(--trait);
+}
+/* La suite des touches, quand le geste en demande plusieurs. Le chevron porte
+   l'enchainement a lui seul : numeroter allongerait la bande sans rien dire de
+   plus, et cette bande est la seule chose a l'ecran qui ne soit pas du code. */
+.etapes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.55rem;
+  min-width: 0;
+}
+.etape {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--attenue);
+}
+.etape + .etape::before {
+  content: '\203A';
+  margin-right: 0.25rem;
+  color: var(--faible);
+}
+.etape kbd { color: var(--encre); }
+
+.indice-etiquette {
+  flex: none;
+  font-size: 0.56rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.ecran-bilan { justify-content: center; align-items: center; padding: 1.5rem; }
+.bilan {
+  width: min(34rem, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+.bilan-titre {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--faible);
+}
+.bilan-chiffres {
+  margin: 0;
+  display: flex;
+  gap: 1.3rem;
+  font-family: var(--mono);
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--encre);
+}
+
+/* Le bilan ne retient qu'UN geste. Une liste de cinq reproches ne se travaille
+   pas : on repart avec la meme chose qu'en arrivant, en plus decourage. */
+.bilan-geste {
+  border-left: 2px solid var(--accent);
+  padding: 0.15rem 0 0.15rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.bilan-etiquette {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.bilan-conseil { margin: 0; font-size: 0.95rem; color: var(--encre); line-height: 1.45; }
+.bilan-detail { margin: 0; font-family: var(--mono); font-size: 0.72rem; color: var(--faible); }
+
+.bilan-liste { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+.bilan-liste li {
+  display: grid;
+  grid-template-columns: 1fr 5rem 2.6rem auto;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.78rem;
+}
+.bilan-nom { color: var(--attenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bilan-barre { height: 3px; background: var(--creux); border-radius: 2px; overflow: hidden; }
+.bilan-barre i { display: block; height: 100%; background: var(--accent); }
+.bilan-pct {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--encre);
+}
+.bilan-marque {
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faible);
+  border: 1px solid var(--trait);
+  border-radius: 3px;
+  padding: 0.05em 0.3em;
+}
+.bilan .aide { padding: 0; }
+
+/* --- La carte des gestes : ou tu en es sur les douze --- */
+.carte { display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid var(--trait); padding-top: 1rem; }
+.carte-points { display: flex; gap: 5px; flex-wrap: wrap; }
+.pastille { width: 9px; height: 9px; border-radius: 50%; }
+/* Trois etats, trois traitements : plein pour ce qui est tenu, creux pour la
+   dette (le seul sur lequel on peut agir, donc le seul en couleur d'alerte),
+   efface pour ce qui n'a jamais ete rencontre. */
+.pastille.tenu { background: var(--accent); }
+.pastille.dette { background: transparent; box-shadow: inset 0 0 0 2px var(--alerte); }
+.pastille.neuf { background: var(--trait); }
+.carte-compte { margin: 0; font-family: var(--mono); font-size: 0.72rem; color: var(--faible); }
+.carte-compte b { color: var(--encre); font-weight: 600; }
+.carte-compte b.en-dette { color: var(--alerte); }
+.carte-dette { margin: 0; font-family: var(--mono); font-size: 0.7rem; color: var(--attenue); line-height: 1.5; }
+
+/* --- Le banc de lecture --- */
+.banc-nom {
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+  border: 1px solid var(--trait);
+  color: var(--faible);
+}
+.banc-nom.lecture { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+
+.volet-question { background: var(--creux); }
+.question { padding: 1rem 0.9rem; display: flex; flex-direction: column; gap: 0.9rem; overflow: auto; }
+.question-texte { margin: 0; font-size: 1rem; line-height: 1.5; color: var(--encre); }
+
+.reponse { display: flex; gap: 0.5rem; }
+.reponse input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  padding: 0.5rem 0.6rem;
+  color: var(--encre);
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: 4px;
+}
+.reponse input:focus { outline: none; border-color: var(--accent); }
+/* Une mauvaise reponse se signale sans se commenter : on ne dit pas ou est
+   l'erreur, le seul retour utile est « relis ». */
+.reponse input.refuse { border-color: var(--alerte); animation: refus 0.42s ease; }
+@keyframes refus {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.reponse button {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  padding: 0.5rem 0.8rem;
+  color: var(--fond);
+  background: var(--accent);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.reponse button:disabled { opacity: 0.4; cursor: default; }
+
+.tentatives { margin: 0; font-family: var(--mono); font-size: 0.72rem; color: var(--alerte); }
+.tentatives-note { color: var(--faible); }
+.explication { line-height: 1.5; }
+
+.puce { display: inline-block; width: 5px; height: 5px; border-radius: 50%; margin-right: 0.45rem; vertical-align: middle; }
+.puce.edition { background: var(--faible); }
+.puce.lecture { background: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reponse input.refuse { animation: none; }
+}
+
+/* --- Le banc de debogage --- */
+.banc-nom.debogage { color: var(--alerte); border-color: color-mix(in srgb, var(--alerte) 45%, transparent); }
+/* Le symptome est un FAIT observe, pas une consigne : monospace, ton neutre,
+   et jamais d'indication sur l'endroit ou chercher. */
+.symptome {
+  margin: 0;
+  padding: 0.6rem 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--encre);
+  background: color-mix(in srgb, var(--alerte) 10%, var(--surface));
+  border-left: 2px solid var(--alerte);
+  border-radius: 0 3px 3px 0;
+}
+.puce.debogage { background: var(--alerte); }
+
+/* Le format attendu, colle a la question : c'est la que le regard est au moment
+   de taper, pas en pied de page. */
+.attendu {
+  display: block;
+  margin-top: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--faible);
+}
+/* Le panneau de question doit se comporter comme l'editeur : prendre la place
+   restante et defiler dedans, sinon un contenu long pousse le pied hors de
+   l'ecran sur une fenetre courte. */
+.question { flex: 1; min-height: 0; }
+
+/* La sortie de secours : visible mais jamais attirante. Elle ne se propose
+   qu'apres deux tentatives, et elle coute l'epreuve. */
+.renoncer {
+  align-self: flex-start;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  padding: 0.35rem 0.6rem;
+  color: var(--attenue);
+  background: transparent;
+  border: 1px solid var(--trait);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.renoncer:hover { color: var(--encre); border-color: var(--faible); }
+
+/* Pendant la reparation, le bandeau ne montre plus le geste mais la CAUSE :
+   on ne repare pas ce qu'on n'a pas compris. */
+.indice-cause { background: color-mix(in srgb, var(--alerte) 9%, var(--surface)); }
+.indice-cause .indice-etiquette { color: var(--alerte); }
+
+/* Le langage lu, dans l'entete du volet : on doit savoir ce qu'on lit avant de
+   commencer a le lire. */
+.volet-titre { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.langage {
+  font-size: 0.58rem;
+  letter-spacing: 0.09em;
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 3px;
+  padding: 0.05em 0.35em;
+  text-transform: none;
 }

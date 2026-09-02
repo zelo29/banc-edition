@@ -12,6 +12,10 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "noEmit": true,
+    // Autorise l'extension .ts dans un import. Necessaire au seul import
+    // ./score.ts de seance.ts : les harnais de verif/ chargent les sources
+    // directement avec Node, qui exige l'extension la ou un bundler la devine.
+    "allowImportingTsExtensions": true,
     "types": []
   },
   "include": ["src"]
