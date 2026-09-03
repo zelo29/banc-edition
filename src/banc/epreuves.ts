@@ -13,22 +13,25 @@ import { distance } from './score.ts';
 import { KATAS, type Kata } from '../katas/index.ts';
 import { LECTURES, type Lecture } from '../lectures/index.ts';
 import { DEBOGAGES, type Debogage } from '../debogages/index.ts';
+import { NAVIGATIONS, type Navigation } from '../navigations/index.ts';
 
 export type Epreuve =
   | ({ banc: 'edition' } & Kata)
   | ({ banc: 'lecture' } & Lecture)
-  | ({ banc: 'debogage' } & Debogage);
+  | ({ banc: 'debogage' } & Debogage)
+  | ({ banc: 'navigation' } & Navigation);
 
 /** Le nom d'un banc, dérivé des épreuves : ajouter un banc suffit à l'étendre. */
 export type Banc = Epreuve['banc'];
 
 /** Les bancs qui posent une question plutôt qu'une édition. */
-export const AVEC_QUESTION = ['lecture', 'debogage'] as const;
+export const AVEC_QUESTION = ['lecture', 'debogage', 'navigation'] as const;
 
 export const EPREUVES: Epreuve[] = [
   ...KATAS.map((k) => ({ banc: 'edition' as const, ...k })),
   ...LECTURES.map((l) => ({ banc: 'lecture' as const, ...l })),
   ...DEBOGAGES.map((d) => ({ banc: 'debogage' as const, ...d })),
+  ...NAVIGATIONS.map((n) => ({ banc: 'navigation' as const, ...n })),
 ];
 
 const couts = new Map<string, number>();
@@ -45,7 +48,22 @@ const couts = new Map<string, number>();
 export function cout(e: Epreuve): number {
   let c = couts.get(e.id);
   if (c === undefined) {
-    c = e.banc === 'edition' ? distance(e.depart, e.cible) : e.code.split('\n').length * 4;
+    c =
+      e.banc === 'edition'
+        ? distance(e.depart, e.cible)
+        : // Une navigation se compte en FICHIERS, pas en lignes. Sommer les
+          // lignes de l'arbre suppose qu'on le lit en entier, ce qui est
+          // exactement le geste que le banc apprend à ne pas faire : on ouvre
+          // deux fichiers sur cinq et on ferme. La difficulté, c'est la taille
+          // de l'espace de recherche, pas celle du texte.
+          //
+          // Ce n'est pas un détail d'échelle. En lignes, les six navigations
+          // coûtaient 48 à 96 quand la lecture médiane en coûte 32 : elles
+          // partaient donc en dernier parmi les épreuves jamais rencontrées, et
+          // le banc entier n'apparaissait qu'à la NEUVIÈME séance.
+          e.banc === 'navigation'
+          ? e.fichiers.length * 12
+          : e.code.split('\n').length * 4;
     couts.set(e.id, c);
   }
   return c;

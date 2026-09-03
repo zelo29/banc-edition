@@ -23,6 +23,7 @@ import { javascript } from '@codemirror/lang-javascript';
 import { vim } from '@replit/codemirror-vim';
 import { journalExtension } from './banc/journal';
 import { raccourcisKata } from './banc/raccourcis';
+import { themeEditeur } from './banc/theme';
 
 interface Props {
   depart: string;
@@ -65,7 +66,9 @@ export default function Editeur({ depart, vimActif, onChange }: Props) {
         if (u.docChanged) rappel.current(u.state.doc.toString());
       }),
       journalExtension(),
-      EditorView.theme({ '&': { fontSize: '14px', height: '100%' } }),
+      // Sans lui, CodeMirror se croit sur fond clair : curseur noir invisible et
+      // selection blanche sous du texte blanc. Voir `banc/theme.ts`.
+      themeEditeur(),
     ];
 
     const v = new EditorView({

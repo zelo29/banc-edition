@@ -2,11 +2,11 @@
 
 Mesure **comment tu travailles**, pas seulement si l'exercice est résolu.
 
-Trois bancs, une seule séance : **éditer** (la main), **lire** (l'œil) et
-**déboguer** (remonter de l'effet à la cause). La
-séance ne fait pas la différence — elle tire des épreuves, et seul l'écran sait
-laquelle afficher. C'est ce qui a permis d'ajouter le troisième sans retoucher
-le reste.
+Quatre bancs, une seule séance : **éditer** (la main), **lire** (l'œil),
+**déboguer** (remonter de l'effet à la cause) et **naviguer** (trouver où, dans
+un arbre). La séance ne fait pas la différence — elle tire des épreuves, et seul
+l'écran sait laquelle afficher. C'est ce qui a permis d'ajouter le troisième
+puis le quatrième sans retoucher le reste.
 
 Monkeytype mesure la frappe brute sans éditeur. Codewars mesure la résolution
 sans regarder l'exécution. VimGolf mesure le geste — mais en vim seulement, en
@@ -299,6 +299,70 @@ CI, une annotation TypeScript et un en-tête HTTP. Quatre sur quarante-six, et l
 harnais les affiche à chaque passage plutôt que de laisser croire à une
 vérification.
 
+## Le banc de navigation
+
+Lire un fichier et chercher dans un arbre sont deux gestes différents, et le
+second décide de tes deux premières semaines dans une équipe. On ne te demandera
+pas de comprendre `paiement.js` : on te demandera de trouver **où** le montant
+est arrondi, dans quatre cents fichiers que personne n'a le temps de t'expliquer.
+
+Six épreuves, six techniques :
+
+| épreuve | ce qu'elle entraîne |
+|---|---|
+| Trois usages, une déclaration | chercher `const X`, pas `X` — quatre fichiers le contiennent, un seul le crée |
+| L'appel et ses sosies | un import et un commentaire ne sont pas des appels |
+| Avant de changer la signature | compter les importateurs, c'est ça le coût du changement |
+| Le baril qui ne définit rien | un `export … from` réexporte sans définir : suivre la chaîne |
+| Deux fonctions, un seul nom | à noms égaux, c'est l'import qui tranche |
+| Chercher une absence | le code mort ne se trouve avec aucune recherche : exports moins imports |
+
+La recherche du navigateur n'est **pas bridée** — elle compte les
+correspondances par fichier, exactement comme celle d'un éditeur. Ce sont les
+épreuves qui sont construites pour qu'elle ne suffise pas, et le harnais vérifie
+qu'aucune ne se résout par une recherche naïve. Brider l'outil aurait entraîné à
+naviguer dans un dépôt qui n'existe pas.
+
+### Le champ `preuve`, et pourquoi il compte pour la suite
+
+Une lecture s'exécute, un débogage se reproduit. Une navigation n'a rien à
+exécuter : sa réponse est un **fait sur l'arbre**. Chaque épreuve déclare donc
+comment sa réponse se recalcule — `{ genre: 'appelant', symbole: 'purger' }` —
+et `verif/navigation.mjs` la recalcule vraiment avant de la comparer à celle qui
+est écrite.
+
+Le harnais vérifie deux choses de plus que la réponse :
+
+- **l'unicité** — « quelle fonction appelle X » n'a de sens que s'il n'y en a
+  qu'une, et une épreuve à deux réponses justes ne se voit pas en relisant ;
+- **la non-trivialité** — si le symbole n'apparaît que dans un fichier, aucune
+  navigation n'est demandée.
+
+Un genre de preuve non implémenté fait échouer le harnais. **C'est ce qui rendra
+le générateur d'épreuves possible** : un lot produit par un agent se valide tout
+seul, sans qu'un humain relise quatre cents fichiers pour vérifier qu'il n'y a
+bien qu'un seul appel.
+
+Les quatre mutations qui doivent échouer — une fausse réponse, un second appel
+qui rend la question ambiguë, une seconde déclaration, un genre inventé — ont été
+essayées une par une : les quatre sont détectées.
+
+## La première séance fait le tour du produit
+
+« Le moins cher d'abord » était la bonne règle avec un seul banc. Avec quatre,
+le banc le plus fourni occupe tout : vingt-six lectures repoussaient la première
+navigation à la **septième séance** — un quart du produit invisible pendant une
+semaine, sur un outil dont la seule question est de savoir s'il sera rouvert.
+
+Le premier rang du tirage — les épreuves jamais rencontrées — alterne donc les
+bancs, chacun servant sa moins chère. La séance n°1 montre les quatre. Ce qui ne
+change pas : le rang reste prioritaire, la dette passe avant l'entretien, et à
+l'intérieur d'un banc l'ordre reste du moins cher au plus cher.
+
+Un détail qui n'en est pas un : le coût d'une navigation se compte en
+**fichiers**, pas en lignes. Sommer les lignes de l'arbre suppose qu'on le lit en
+entier, ce qui est exactement le geste que le banc apprend à ne pas faire.
+
 ## Un kata = deux fichiers
 
 `depart` et `cible`. La cible **est** le test : pas de suite de tests, pas de
@@ -330,7 +394,7 @@ Ce que le banc ne mesurera jamais et qu'il faut savoir quand même :
 8. ~~Le banc de débogage : un symptôme, un extrait, le temps jusqu'à la cause~~
 9. ~~Les domaines voisins : data et sécurité, comme matériau de lecture~~
 10. ~~La répétition : refaire tout de suite ce qu'on vient d'apprendre, sans l'indice~~
-11. La navigation de dépôt : plusieurs fichiers, une question qui oblige à trouver *où*
+11. ~~La navigation de dépôt : plusieurs fichiers, une question qui oblige à trouver *où*~~
 12. Le générateur d'épreuves : un lot de plus, validé par exécution avant d'être accepté
 13. Le coach : détection des motifs lents dans le journal
 

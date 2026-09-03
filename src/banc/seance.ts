@@ -74,14 +74,51 @@ function rang(kata: Epreuve, historique: Historique): [number, number] {
   return [acquis(essais) ? 2 : 1, essais[essais.length - 1].quand ?? 0];
 }
 
+/**
+ * Alterne les bancs, en gardant l'ordre reçu à l'intérieur de chacun.
+ *
+ * Le premier banc servi est celui dont l'épreuve la moins chère arrive en tête,
+ * puis on tourne. Aucun hasard : à état égal, deux séances se ressemblent.
+ */
+function alterner(epreuves: Epreuve[]): Epreuve[] {
+  const files = new Map<Banc, Epreuve[]>();
+  for (const e of epreuves) {
+    const file = files.get(e.banc);
+    if (file) file.push(e);
+    else files.set(e.banc, [e]);
+  }
+  const sortie: Epreuve[] = [];
+  while (sortie.length < epreuves.length) {
+    for (const file of files.values()) {
+      const e = file.shift();
+      if (e) sortie.push(e);
+    }
+  }
+  return sortie;
+}
+
 export function tirer(katas: Epreuve[], taille: number, historique: Historique): Epreuve[] {
-  return [...katas]
-    .sort((a, b) => {
-      const [ra, da] = rang(a, historique);
-      const [rb, db] = rang(b, historique);
-      return ra - rb || da - db;
-    })
-    .slice(0, taille);
+  const classe = [...katas].sort((a, b) => {
+    const [ra, da] = rang(a, historique);
+    const [rb, db] = rang(b, historique);
+    return ra - rb || da - db;
+  });
+
+  // Le premier rang — les épreuves jamais rencontrées — est réordonné pour
+  // alterner les bancs. « Le moins cher d'abord » était la bonne règle quand il
+  // n'y avait qu'un banc ; avec quatre, elle laisse le banc le plus fourni
+  // occuper toutes les séances. Vingt-six lectures suffisaient à repousser la
+  // première navigation à la SEPTIÈME séance : un quart du produit invisible
+  // pendant une semaine, sur un outil dont la seule question est de savoir s'il
+  // sera rouvert.
+  //
+  // Ce qui ne change pas : le rang reste prioritaire — dette avant entretien —
+  // et à l'intérieur d'un banc, du moins cher au plus cher. La première séance
+  // reste courte, mais elle fait maintenant le tour de ce que le banc sait
+  // faire au lieu de servir cinq fois la même chose.
+  const jamaisVus = classe.filter((e) => !historique[e.id]?.length);
+  const dejaVus = classe.filter((e) => historique[e.id]?.length);
+  return [...alterner(jamaisVus), ...dejaVus].slice(0, taille);
 }
 
 /** Une étape terminée. Tout ce que le bilan a besoin de savoir. */

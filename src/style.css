@@ -13,6 +13,18 @@
   --alerte: #ff7a6d;
   --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   --sans: 'IBM Plex Sans', system-ui, sans-serif;
+
+  /* La coloration du code. Elle vit ici et pas dans un theme CodeMirror fige :
+     une seule palette pour l'ecran et pour le code, qui suit clair et sombre
+     sans qu'on ait deux endroits a tenir. `banc/theme.ts` ne fait que la lire. */
+  --code-mot: #a68bff;
+  --code-chaine: #7fd6a2;
+  --code-nombre: #f0a862;
+  --code-nom: #74b6f7;
+  --code-type: #58cfc4;
+  --code-propriete: #c6cde6;
+  --code-signe: #8b93ad;
+  --code-commentaire: #6b7391;
 }
 
 @media (prefers-color-scheme: light) {
@@ -26,6 +38,15 @@
     --trait: #d2d7e4;
     --accent: #3a2bf0;
     --alerte: #b92f26;
+
+    --code-mot: #5b21c9;
+    --code-chaine: #0f6b40;
+    --code-nombre: #9a4a06;
+    --code-nom: #0a5aa0;
+    --code-type: #0b6b64;
+    --code-propriete: #303751;
+    --code-signe: #6b7280;
+    --code-commentaire: #6b7280;
   }
 }
 
@@ -41,17 +62,25 @@ body {
 
 .ecran { height: 100%; display: flex; flex-direction: column; }
 
+/* Trois colonnes et non `space-between` : le chronometre est un instrument de
+   mesure qu'on lit d'une epreuve a l'autre, et il se deplacait horizontalement
+   avec la longueur du titre. Il est desormais au meme pixel a chaque fois. */
 .barre {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
   padding: 0.55rem 1rem;
   border-bottom: 1px solid var(--trait);
   background: var(--surface);
 }
 
-.titre { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; }
+.titre { grid-column: 1; display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; min-width: 0; }
+.titre > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Colonnes nommees et non « dans l'ordre » : un enfant qui ne se rend pas
+   ferait glisser les suivants d'une colonne, et l'en-tete bougerait a nouveau. */
+.compteurs { grid-column: 2; }
+.reglages { grid-column: 3; display: flex; justify-content: flex-end; min-width: 0; }
 
 .compteurs { display: flex; gap: 1.15rem; align-items: center; font-family: var(--mono); }
 .compteur { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
@@ -91,8 +120,23 @@ body {
 }
 
 .pied { border-top: 1px solid var(--trait); background: var(--surface); }
-.jauge { height: 3px; background: var(--creux); }
+.jauge { height: 3px; background: var(--creux); overflow: hidden; }
 .jauge-remplie { height: 100%; background: var(--accent); transition: width 90ms linear; }
+/* La meme bande, l'autre sens : ce qui reste avant l'epreuve suivante. Elle est
+   la seule chose qui disait que l'enchainement etait automatique. */
+.jauge-minuterie {
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+  animation-name: minuterie;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes minuterie { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* Le rappel de touches se range a droite du resultat, jamais au milieu. */
+.suite { margin-left: auto; color: var(--faible); }
 
 .aide, .reussite {
   display: flex;
@@ -119,7 +163,15 @@ kbd {
 @media (max-width: 60rem) {
   .volets { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .volet { border-right: none; border-bottom: 1px solid var(--trait); }
+  /* Trois lignes de bash n'ont aucune raison d'occuper la moitie de l'ecran
+     pendant que la question, elle, se serre en bas. Le code prend la hauteur de
+     ce qu'il contient, plafonnee ; la question prend tout le reste. */
+  .volets-question { grid-template-rows: minmax(0, auto) minmax(0, 1fr); }
+  .volets-question > .volet:first-child { max-height: 45vh; }
 }
+
+/* Le code qu'on lit ne s'etire pas : il fait sa hauteur (voir themeLecture). */
+.editeur-lecture { flex: 0 1 auto; }
 
 /* --- Score de fin de kata --- */
 .efficacite {
@@ -312,7 +364,21 @@ kbd {
 .question { padding: 1rem 0.9rem; display: flex; flex-direction: column; gap: 0.9rem; overflow: auto; }
 .question-texte { margin: 0; font-size: 1rem; line-height: 1.5; color: var(--encre); }
 
-.reponse { display: flex; gap: 0.5rem; }
+/* Une etiquette, pas un texte de remplacement : le format etait ecrit deux fois
+   — sous la question ET dans le champ — et celui du champ disparaissait des la
+   premiere touche, c'est-a-dire exactement quand on en a besoin. */
+.reponse { display: flex; flex-direction: column; gap: 0.4rem; }
+.reponse-etiquette {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--faible);
+}
+.reponse-ligne { display: flex; gap: 0.5rem; }
 .reponse input {
   flex: 1;
   min-width: 0;
@@ -326,8 +392,13 @@ kbd {
 }
 .reponse input:focus { outline: none; border-color: var(--accent); }
 /* Une mauvaise reponse se signale sans se commenter : on ne dit pas ou est
-   l'erreur, le seul retour utile est « relis ». */
-.reponse input.refuse { border-color: var(--alerte); animation: refus 0.42s ease; }
+   l'erreur, le seul retour utile est « relis ». La secousse ne fait que la
+   signaler ; c'est `.tentatives` qui l'ecrit, et qui reste. */
+/* Le cadre reste rouge tant que le refus tient — il accompagne le message.
+   La secousse, elle, ne fait que le signaler et retombe : elle doit pouvoir
+   etre rejouee au refus suivant. */
+.reponse input.refuse { border-color: var(--alerte); }
+.reponse input.secoue { animation: refus 0.42s ease; }
 @keyframes refus {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-4px); }
@@ -345,8 +416,22 @@ kbd {
 }
 .reponse button:disabled { opacity: 0.4; cursor: default; }
 
-.tentatives { margin: 0; font-family: var(--mono); font-size: 0.72rem; color: var(--alerte); }
-.tentatives-note { color: var(--faible); }
+/* Hauteur reservee : un retour qui apparait poussait le bouton « je ne sais
+   pas » vers le bas au moment precis ou la main allait dessus. Et l'alerte ne
+   sort que pour un refus — une bonne reponse du premier coup affichait
+   « 1 tentative » en rouge, ce qui punissait la seule chose a encourager. */
+.tentatives {
+  margin: 0;
+  min-height: 1.2rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--faible);
+}
+.tentatives b { color: var(--alerte); font-weight: 600; }
 .explication { line-height: 1.5; }
 
 .puce { display: inline-block; width: 5px; height: 5px; border-radius: 50%; margin-right: 0.45rem; vertical-align: middle; }
@@ -354,7 +439,7 @@ kbd {
 .puce.lecture { background: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) {
-  .reponse input.refuse { animation: none; }
+  .reponse input.secoue { animation: none; }
 }
 
 /* --- Le banc de debogage --- */
@@ -374,34 +459,43 @@ kbd {
 }
 .puce.debogage { background: var(--alerte); }
 
-/* Le format attendu, colle a la question : c'est la que le regard est au moment
-   de taper, pas en pied de page. */
-.attendu {
-  display: block;
-  margin-top: 0.4rem;
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--faible);
-}
+/* Le format attendu, colle au champ : c'est la que le regard est au moment de
+   taper, pas en pied de page. */
+.attendu { text-transform: none; letter-spacing: 0; font-size: 0.72rem; color: var(--attenue); }
+.attendu::before { content: '\2014\00a0'; color: var(--faible); }
 /* Le panneau de question doit se comporter comme l'editeur : prendre la place
    restante et defiler dedans, sinon un contenu long pousse le pied hors de
    l'ecran sur une fenetre courte. */
 .question { flex: 1; min-height: 0; }
 
-/* La sortie de secours : visible mais jamais attirante. Elle ne se propose
-   qu'apres deux tentatives, et elle coute l'epreuve. */
+/* La sortie de secours : visible mais jamais attirante. Elle est la des la
+   premiere seconde — la reserver a la troisieme tentative obligeait a inventer
+   deux reponses avant d'avoir le droit de dire qu'on ne sait pas. Ce qui la
+   retient n'est plus un verrou mais son cout, ecrit dessus. */
 .renoncer {
   align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: left;
   font-family: var(--mono);
   font-size: 0.72rem;
-  padding: 0.35rem 0.6rem;
+  padding: 0.4rem 0.7rem;
   color: var(--attenue);
   background: transparent;
   border: 1px solid var(--trait);
   border-radius: 4px;
   cursor: pointer;
 }
+.renoncer small { font-size: 0.62rem; color: var(--faible); }
 .renoncer:hover { color: var(--encre); border-color: var(--faible); }
+.renoncer:hover small { color: var(--attenue); }
+
+/* La reponse qu'il fallait ecrire, montree quand on a renonce ou cherche
+   plusieurs fois. Elle porte l'accent et non l'alerte : c'est la bonne reponse,
+   pas un reproche — `.detail b` peint en rouge tout le reste du pied. */
+.detail.attendue b { color: var(--accent); }
+.revelee { color: var(--alerte); font-weight: 600; }
 
 /* Pendant la reparation, le bandeau ne montre plus le geste mais la CAUSE :
    on ne repare pas ce qu'on n'a pas compris. */
@@ -419,4 +513,122 @@ kbd {
   border-radius: 3px;
   padding: 0.05em 0.35em;
   text-transform: none;
+}
+
+/* --- La répétition ---------------------------------------------------------
+   Le même kata qui revient doit s'annoncer, et la courbe doit se lire d'un
+   coup d'œil : c'est la comparaison au precedent essai qui enseigne, pas la
+   valeur absolue. */
+.reprise {
+  font-size: 0.58rem;
+  letter-spacing: 0.09em;
+  color: var(--fond);
+  background: var(--accent);
+  border-radius: 3px;
+  padding: 0.15em 0.45em;
+  text-transform: uppercase;
+}
+
+.serie {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 1.8rem;
+  padding-left: 0.9rem;
+  margin-left: 0.3rem;
+  border-left: 1px solid var(--trait);
+}
+.serie i {
+  display: block;
+  width: 6px;
+  border-radius: 1px;
+  background: var(--faible);
+}
+/* Le dernier essai est celui qu'on retient — pas le meilleur. Il est donc le
+   seul coloré : la barre qu'on regarde est celle qui compte. */
+.serie i.courant { background: var(--accent); }
+.serie b {
+  align-self: center;
+  margin-left: 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--attenue);
+}
+
+/* --- Le banc de navigation -------------------------------------------------
+   Trois choses et pas une de plus : la liste des fichiers, celui qu'on a
+   ouvert, et une recherche. Le compteur par fichier est le seul element qui
+   enseigne quelque chose : apprendre a ne PAS ouvrir celui qui en a le plus
+   est une bonne partie du geste. */
+.volet-depot { min-width: 0; }
+.depot {
+  display: grid;
+  grid-template-columns: minmax(11rem, 15rem) minmax(0, 1fr);
+  gap: 0.75rem;
+  min-height: 0;
+}
+.depot-arbre { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
+.depot-arbre ul { list-style: none; margin: 0; padding: 0; }
+.depot-arbre li { margin: 0; }
+.depot-arbre button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.28rem 0.45rem;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--attenue);
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-align: left;
+  cursor: pointer;
+}
+.depot-arbre button:hover { background: var(--creux); color: var(--encre); }
+.depot-arbre button.ouvert { background: var(--creux); color: var(--encre); }
+.depot-chemin { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Le nombre de correspondances, comme dans la barre laterale d'un editeur. */
+.depot-compte {
+  flex: none;
+  min-width: 1.15rem;
+  padding: 0 0.25em;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent);
+  font-size: 0.62rem;
+  text-align: center;
+}
+.depot-recherche {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--trait);
+  border-radius: 3px;
+  background: var(--fond);
+  color: var(--encre);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+}
+.depot-recherche:focus { outline: none; border-color: var(--accent); }
+.depot-resultat { margin: 0; font-size: 0.65rem; color: var(--faible); }
+.depot-fichier { min-width: 0; }
+
+@media (max-width: 900px) {
+  .depot { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* La couleur du quatrieme banc. Elle est definie ici plutot qu'en tete parce
+   qu'elle appartient a la navigation : la palette de base n'a pas a grossir a
+   chaque banc ajoute. Meme structure de selecteurs que le reste, sinon le mode
+   clair force resterait sur la teinte sombre. */
+:root { --navigation: #58cfc4; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) { --navigation: #0d7a70; }
+}
+.puce.navigation { background: var(--navigation); }
+.banc-nom.navigation {
+  color: var(--navigation);
+  border-color: color-mix(in srgb, var(--navigation) 45%, transparent);
 }

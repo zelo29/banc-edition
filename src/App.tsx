@@ -19,6 +19,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Editeur from './Editeur';
 import Compteurs from './banc/Compteurs';
 import Question, { Code } from './banc/Question';
+import Depot from './banc/Depot';
 import { armer, arreter, lire } from './banc/journal';
 import { lireChrono } from './banc/chrono';
 import { NOM_LANGAGE } from './banc/langages';
@@ -35,15 +36,30 @@ import {
   type EtapeFaite,
   type Historique,
 } from './banc/seance';
+import {
+  MAX_REPRISES_SEANCE,
+  derniersEssais,
+  montrerIndice,
+  refaire,
+} from './banc/repetition';
 import { TOUCHES_VOLEES } from './banc/raccourcis';
 
 /**
  * Le temps d'affichage du résultat avant l'enchaînement automatique. Assez pour
  * lire « 68 % », pas assez pour avoir à décider quoi que ce soit.
+ *
+ * L'enchaînement automatique reste le principe — on ne décide de rien pendant
+ * une séance. Mais il était invisible et sans frein : le résultat d'un kata
+ * tient en deux lignes denses, celui d'une lecture porte l'explication, et les
+ * deux disparaissaient au milieu d'une phrase sans qu'on ait vu venir quoi que
+ * ce soit. La minuterie est donc dessinée (elle occupe la jauge, qui n'a plus
+ * de progression à montrer une fois l'épreuve finie) et `Espace` la retient
+ * aussi longtemps qu'on veut. Décider de continuer reste facultatif ; se faire
+ * couper la lecture ne l'est plus.
  */
-const PAUSE = 1600;
-/** Une lecture mérite plus : on y affiche ce qu'il fallait voir. */
-const PAUSE_LECTURE = 4200;
+const PAUSE = 2600;
+/** Lecture et débogage méritent plus : on y affiche ce qu'il fallait voir. */
+const PAUSE_QUESTION = 5200;
 
 /** Compare en ignorant les espaces de fin de ligne : l'éditeur en ajoute, pas l'humain. */
 const normaliser = (t: string) => t.replace(/[ \t]+$/gm, '').trimEnd();
@@ -55,11 +71,20 @@ export default function App() {
   const [faites, setFaites] = useState<EtapeFaite[]>([]);
   const [phase, setPhase] = useState<'kata' | 'bilan'>('kata');
 
+  // La série en cours : les efficacités déjà obtenues sur CETTE épreuve. Sa
+  // longueur est le numéro de l'essai à venir, et c'est elle qui décide si
+  // l'indice paraît — la reprise se fait sans rien sous les yeux.
+  const [serie, setSerie] = useState<number[]>([]);
+  /** Reprises déjà consommées par la séance : la taille reste bornée. */
+  const [reprises, setReprises] = useState(0);
+
   const [texte, setTexte] = useState(() => {
     const e = seance[0];
     return e.banc === 'edition' ? e.depart : '';
   });
   const [fini, setFini] = useState<EtapeFaite | null>(null);
+  /** l'enchaînement automatique est-il suspendu ? voir PAUSE */
+  const [retenu, setRetenu] = useState(false);
   const [essai, setEssai] = useState(0);
   const [vimActif, setVimActif] = useState(false);
   const [enseigne, setEnseigne] = useState(() => !acquis(historique[seance[0].id]));
@@ -72,21 +97,33 @@ export default function App() {
 
   const epreuve = seance[etape];
 
-  const ouvrir = useCallback((e: Epreuve, hist: Historique) => {
+  const ouvrir = useCallback((e: Epreuve, hist: Historique, numero = 0) => {
     setReparation(false);
     setDiagnostic(null);
     setTexte(e.banc === 'edition' ? e.depart : '');
-    setEnseigne(!acquis(hist[e.id]));
+    setEnseigne(montrerIndice(acquis(hist[e.id]), numero));
     setFini(null);
+    setRetenu(false);
     setEssai((n) => n + 1);
     armer();
   }, []);
 
+  // Recommencer à la main ne rouvre pas la leçon : on reste au même numéro
+  // d'essai, donc l'indice ne revient pas après une reprise déjà entamée.
   const recommencer = useCallback(() => {
-    ouvrir(epreuve, historique);
-  }, [epreuve, historique, ouvrir]);
+    ouvrir(epreuve, historique, serie.length);
+  }, [epreuve, historique, serie, ouvrir]);
 
   const avancer = useCallback(() => {
+    // La reprise passe AVANT l'épreuve suivante : on refait tout de suite ce
+    // qu'on vient d'apprendre, sans l'indice cette fois. C'est le seul moment
+    // où le banc enseigne et teste dans la même minute.
+    if (refaire(epreuve, serie, MAX_REPRISES_SEANCE - reprises)) {
+      setReprises((n) => n + 1);
+      ouvrir(epreuve, historique, serie.length);
+      return;
+    }
+    setSerie([]);
     if (etape + 1 >= seance.length) {
       setPhase('bilan');
       setFini(null);
@@ -94,7 +131,7 @@ export default function App() {
     }
     setEtape(etape + 1);
     ouvrir(seance[etape + 1], historique);
-  }, [etape, seance, historique, ouvrir]);
+  }, [epreuve, serie, reprises, etape, seance, historique, ouvrir]);
 
   // Le tirage suivant tient compte de ce qui vient d'être fait : une épreuve
   // ratée revient tout de suite, une épreuve tenue passe en entretien.
@@ -103,6 +140,8 @@ export default function App() {
     setSeance(tiree);
     setEtape(0);
     setFaites([]);
+    setSerie([]);
+    setReprises(0);
     setPhase('kata');
     ouvrir(tiree[0], historique);
   }, [historique, ouvrir]);
@@ -112,6 +151,7 @@ export default function App() {
     (faite: EtapeFaite) => {
       setFini(faite);
       setFaites((f) => [...f, faite]);
+      setSerie((s) => [...s, faite.efficacite]);
       setHistorique((h) => {
         const suite = {
           ...h,
@@ -138,7 +178,10 @@ export default function App() {
       setTexte(t);
       if (fini || phase !== 'kata') return;
 
-      const depart = epreuve.banc === 'edition' ? epreuve.depart : epreuve.code;
+      // Une navigation n'a pas d'extrait : elle a un arbre. Elle n'a donc pas
+      // non plus de cible, et ce départ ne la concerne pas.
+      const depart =
+        epreuve.banc === 'edition' ? epreuve.depart : 'code' in epreuve ? epreuve.code : '';
       const cible =
         epreuve.banc === 'edition'
           ? epreuve.cible
@@ -211,7 +254,11 @@ export default function App() {
       }
 
       reussir({
-        banc: 'lecture',
+        // Le banc de l'épreuve, et non 'lecture' en dur : une navigation se
+        // mesure exactement comme une lecture, mais elle doit se compter comme
+        // une navigation — sinon la carte des gestes en montre douze au lieu
+        // de six, sous la mauvaise étiquette.
+        banc: epreuve.banc,
         kataId: epreuve.id,
         titre: epreuve.titre,
         geste: epreuve.geste,
@@ -228,11 +275,13 @@ export default function App() {
     [epreuve, fini, enseigne, reussir],
   );
 
+  const pause = fini?.banc === 'edition' ? PAUSE : PAUSE_QUESTION;
+
   useEffect(() => {
-    if (!fini || phase !== 'kata') return;
-    const id = setTimeout(avancer, fini.banc === 'lecture' ? PAUSE_LECTURE : PAUSE);
+    if (!fini || phase !== 'kata' || retenu) return;
+    const id = setTimeout(avancer, pause);
     return () => clearTimeout(id);
-  }, [fini, phase, avancer]);
+  }, [fini, phase, retenu, pause, avancer]);
 
   useEffect(() => {
     const clavier = (e: KeyboardEvent) => {
@@ -265,6 +314,14 @@ export default function App() {
         return;
       }
 
+      // Le seul frein de la séance. Espace ne sert à rien d'autre une fois
+      // l'épreuve finie — l'éditeur est derrière nous, le champ est figé.
+      if (e.key === ' ' && fini) {
+        e.preventDefault();
+        setRetenu(true);
+        return;
+      }
+
       if (e.key === 'Escape' && (!dansEditeur || fini) && !dansChamp) {
         e.preventDefault();
         recommencer();
@@ -275,7 +332,11 @@ export default function App() {
   }, [phase, fini, recommencer, avancer, nouvelleSeance]);
 
   if (phase === 'bilan') {
-    const b = bilan(faites);
+    // Une épreuve reprise ne compte qu'une fois, par son DERNIER essai. Sans
+    // ce filtrage, l'efficacité de la séance — somme des minimums sur somme des
+    // réels — s'effondrerait pour avoir fait ce que l'outil venait de demander.
+    const etapes = derniersEssais(faites);
+    const b = bilan(etapes);
     const lignes = carte(EPREUVES, historique);
     const dette = lignes.filter((l) => l.etat === 'dette');
     const tenus = lignes.filter((l) => l.etat === 'tenu').length;
@@ -310,7 +371,7 @@ export default function App() {
           )}
 
           <ul className="bilan-liste">
-            {faites.map((e) => (
+            {etapes.map((e) => (
               <li key={e.kataId}>
                 <span className="bilan-nom">
                   <i className={`puce ${e.banc}`} title={e.banc} />
@@ -354,7 +415,7 @@ export default function App() {
           </div>
 
           <p className="aide">
-            <kbd>Tab</kbd> nouvelle séance
+            <kbd>Tab</kbd> ou <kbd>Entrée</kbd> — nouvelle séance
           </p>
         </div>
       </div>
@@ -379,23 +440,43 @@ export default function App() {
           </span>
           <span className={`banc-nom ${epreuve.banc}`}>{epreuve.banc}</span>
           <span>{epreuve.titre}</span>
+          {/* Le même kata qui revient DOIT s'annoncer. Sans ça il ressemble à
+              une panne — c'est exactement ce qu'on a vécu quand Tab
+              redémarrait l'épreuve, et refaire dix fois le même kata sans
+              savoir pourquoi décourage plus vite que n'importe quel score. */}
+          {serie.length > 0 && !fini && (
+            <span className="reprise">reprise {serie.length + 1}</span>
+          )}
         </div>
-        {epreuve.banc === 'edition' ? <Compteurs /> : <ChronoLecture cle={epreuve.id} />}
-        <label className="vim">
-          <input
-            type="checkbox"
-            checked={vimActif}
-            onChange={(e) => setVimActif(e.target.checked)}
-            disabled={epreuve.banc !== 'edition'}
-          />
-          vim
-        </label>
+        {/* Pendant la réparation d'un débogage on ÉDITE : ce sont les frappes et
+            la souris qui sont enregistrées, et c'est donc ce qu'il faut montrer.
+            L'en-tête affichait le chronomètre du diagnostic, déjà arrêté. */}
+        {enEdition ? <Compteurs /> : <ChronoLecture cle={epreuve.id} />}
+
+        {/* La case vim était affichée partout, grisée deux fois sur trois. Une
+            commande morte qui ne dit pas pourquoi elle l'est n'apprend rien : on
+            la retire là où elle n'a pas de sens, la colonne lui reste réservée
+            pour que les compteurs ne se déplacent pas d'une épreuve à l'autre. */}
+        <div className="reglages">
+          {enEdition && (
+            <label className="vim">
+              <input type="checkbox" checked={vimActif} onChange={(e) => setVimActif(e.target.checked)} />
+              vim
+            </label>
+          )}
+        </div>
       </header>
 
       {reparation && epreuve.banc === 'debogage' ? (
         <p className="indice indice-cause">
           <span className="indice-etiquette">cause</span>
-          {epreuve.explication}
+          <span>
+            {/* Quand on a renoncé, la ligne cherchée est la seule chose qui
+                manque encore : la donner ici, c'est repartir en sachant, au lieu
+                de réparer un code dont on n'a pas trouvé le défaut. */}
+            {diagnostic?.revele && <b className="revelee">ligne {epreuve.reponses[0]} — </b>}
+            {epreuve.explication}
+          </span>
         </p>
       ) : (
         enseigne && (
@@ -406,7 +487,7 @@ export default function App() {
         )
       )}
 
-      <main className="volets">
+      <main className={`volets ${enEdition ? 'volets-edition' : 'volets-question'}`}>
         {enEdition ? (
           <>
             <section className="volet">
@@ -425,13 +506,17 @@ export default function App() {
           </>
         ) : (
           <>
-            <section className="volet">
-              <p className="volet-titre">
-                {epreuve.banc === 'debogage' ? 'le code fautif' : 'lis ce code'}
-                <span className="langage">{NOM_LANGAGE[epreuve.langage]}</span>
-              </p>
-              <Code key={`${epreuve.id}-${essai}`} source={epreuve.code} langage={epreuve.langage} />
-            </section>
+            {epreuve.banc === 'navigation' ? (
+              <Depot key={`${epreuve.id}-${essai}`} cle={epreuve.id} fichiers={epreuve.fichiers} />
+            ) : (
+              <section className="volet">
+                <p className="volet-titre">
+                  {epreuve.banc === 'debogage' ? 'le code fautif' : 'lis ce code'}
+                  <span className="langage">{NOM_LANGAGE[epreuve.langage]}</span>
+                </p>
+                <Code key={`${epreuve.id}-${essai}`} source={epreuve.code} langage={epreuve.langage} />
+              </section>
+            )}
             <Question
               key={`${epreuve.id}-${essai}`}
               cle={epreuve.id}
@@ -447,8 +532,18 @@ export default function App() {
       </main>
 
       <footer className="pied">
-        <div className="jauge" aria-label="progression vers la cible">
-          <div className="jauge-remplie" style={{ width: `${Math.round(part * 100)}%` }} />
+        {/* Une seule bande, deux sens selon le moment : ce qui reste à faire
+            pendant l'épreuve, ce qui reste avant la suivante après. */}
+        <div className="jauge" aria-label={fini ? 'temps avant l’épreuve suivante' : 'progression vers la cible'}>
+          {fini ? (
+            <div
+              key={fini.kataId}
+              className="jauge-minuterie"
+              style={{ animationDuration: `${pause}ms`, animationPlayState: retenu ? 'paused' : 'running' }}
+            />
+          ) : (
+            <div className="jauge-remplie" style={{ width: `${Math.round(part * 100)}%` }} />
+          )}
         </div>
 
         {fini ? (
@@ -456,6 +551,24 @@ export default function App() {
             <span className="efficacite" title="minimum théorique / réel">
               {(fini.efficacite * 100).toFixed(0)} %<small>efficacité</small>
             </span>
+            {/* La courbe de la série, en direct. Elle ne paraît qu'à partir du
+                deuxième essai : un point seul ne raconte rien, et c'est la
+                comparaison au précédent qui est tout l'enseignement. */}
+            {serie.length > 1 && (
+              <span className="serie" title="les essais sur cette épreuve, dans l’ordre">
+                {serie.map((e, i) => (
+                  <i
+                    key={i}
+                    className={i === serie.length - 1 ? 'courant' : undefined}
+                    style={{ height: `${Math.max(6, Math.round(e * 100))}%` }}
+                  />
+                ))}
+                <b>
+                  {serie[serie.length - 1] > serie[0] ? '+' : ''}
+                  {((serie[serie.length - 1] - serie[0]) * 100).toFixed(0)} pts
+                </b>
+              </span>
+            )}
             {fini.banc === 'debogage' ? (
               <>
                 <span className="detail">
@@ -499,19 +612,47 @@ export default function App() {
                   {(fini.duree / 1000).toFixed(1)} s · {fini.reel} tentative
                   {fini.reel > 1 ? 's' : ''}
                 </span>
+                {/* On a demandé à voir, ou on a cherché plusieurs fois : dans les
+                    deux cas l'explication seule laisse deviner la réponse qu'il
+                    fallait écrire. On l'écrit. Après une bonne réponse du premier
+                    coup, elle ne servirait qu'à occuper la place. */}
+                {(fini.revele || fini.reel > 1) && (
+                  <span className="detail attendue">
+                    la réponse :{' '}
+                    <b>{(epreuve as Extract<Epreuve, { banc: 'lecture' | 'navigation' }>).reponses[0]}</b>
+                  </span>
+                )}
                 <span className="detail explication">
-                  {(epreuve as Extract<Epreuve, { banc: 'lecture' | 'debogage' }>).explication}
+                  {
+                    (epreuve as Extract<Epreuve, { banc: 'lecture' | 'debogage' | 'navigation' }>)
+                      .explication
+                  }
                 </span>
               </>
             )}
+            <span className="detail suite">
+              {retenu ? (
+                <>
+                  <kbd>Entrée</kbd> continuer
+                </>
+              ) : (
+                <>
+                  <kbd>Entrée</kbd> suite · <kbd>Espace</kbd> retenir
+                </>
+              )}
+            </span>
           </div>
         ) : (
           <div className="aide">
+            {/* Le format attendu est desormais ecrit contre le champ, la ou le
+                regard est au moment de taper. Le repeter ici en plus vague
+                — « un mot, un nombre, ou un numero de ligne » — n'ajoutait rien
+                a « un chemin », et prenait la place d'une consigne vraie. */}
             {enEdition
               ? `${Math.round(part * 100)} % de la cible`
               : epreuve.banc === 'debogage'
                 ? 'remonte du symptôme à la ligne, puis tu la répareras'
-                : 'réponds en un mot, un nombre, ou un numéro de ligne'}
+                : ''}
             <span className="detail">
               <kbd>Ctrl+Entrée</kbd> recommencer
             </span>

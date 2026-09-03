@@ -27,12 +27,15 @@ qu'on peut croire.
 | **édition** | la main | distance d'édition minimale / caractères brassés |
 | **lecture** | l'œil sur un fichier inconnu | 1 / tentatives, et le temps |
 | **débogage** | remonter de l'effet à la cause | 1 / tentatives, et le temps |
+| **navigation** | trouver *où*, dans un arbre | 1 / tentatives, et le temps |
 
-46 épreuves, sur huit technologies. Chacune vérifiée par exécution : les
+52 épreuves, sur huit technologies. Chacune vérifiée par exécution : les
 réponses des lectures sont calculées, les requêtes SQL sont jouées sur une base
-en mémoire, les bugs des débogages sont reproduits. Une épreuve dont la réponse
-est affirmée plutôt que calculée est signalée nommément par le harnais — il en
-reste quatre, et le fichier les nomme.
+en mémoire, les bugs des débogages sont reproduits. Les réponses de
+navigation sont recalculées depuis l'arbre — où un symbole est déclaré, qui
+l'appelle, ce que personne n'importe. Une épreuve dont la réponse est affirmée
+plutôt que calculée est signalée nommément par le harnais — il en reste quatre
+sur cinquante-deux, et le fichier les nomme.
 
 **La répétition** est en place, et c'est un mécanisme, pas un banc : une épreuve
 d'édition ratée est refaite tout de suite, sans son indice cette fois, jusqu'à
@@ -45,21 +48,16 @@ par un banc à eux. Le pourquoi est plus bas ; c'est une décision, pas un racco
 
 ## À venir, par ordre de valeur
 
-### 1. La navigation de dépôt
+### 1. Le générateur d'épreuves
 
-Plusieurs fichiers, une question qui oblige à trouver *où* : « quelle fonction
-appelle `charger` ? », « où `TIMEOUT` est-il défini ? ».
-
-Distinct de la lecture : là on comprend un fichier, ici on cherche dans un
-arbre. C'est la compétence qui décide de tes deux premières semaines dans une
-équipe. Matériel neuf à construire : un arbre de fichiers navigable et une
-recherche.
-
-### 2. Le générateur d'épreuves
-
-**Le vrai plafond de l'outil**, et il s'est rapproché : 46 épreuves, c'est neuf
-séances avant d'avoir tout vu. Aucun banc supplémentaire ne règle ça — c'est un
+**Le vrai plafond de l'outil**, et c'est maintenant le premier point de la
+liste : 52 épreuves, c'est onze séances avant d'avoir tout vu. Aucun banc supplémentaire ne règle ça — c'est un
 problème de contenu, et chaque banc ajouté l'aggrave.
+
+Le banc de navigation a posé la brique qui manquait : son champ `preuve` fait
+déclarer à chaque épreuve COMMENT sa réponse se recalcule, et un genre de preuve
+non implémenté fait échouer le harnais. Une épreuve qu'on ne sait pas vérifier
+ne peut donc plus entrer, même produite par nous.
 
 Un agent produit la fournée suivante ; les harnais existants la valident **par
 exécution** avant de l'accepter — une lecture dont la réponse ne se calcule pas,
@@ -69,7 +67,7 @@ reproduit pas, sont rejetés automatiquement.
 C'est le seul endroit de ce projet où faire tourner un agent a du sens : un lot,
 vérifié, quand la bibliothèque s'épuise. Pas une boucle permanente.
 
-### 3. Le coach
+### 2. Le coach
 
 Pas un banc non plus. Il lit le journal des gestes et nomme le motif :
 « tu retapes des lignes entières au lieu de les déplacer »,
@@ -78,7 +76,7 @@ Pas un banc non plus. Il lit le journal des gestes et nomme le motif :
 C'est ce qui transforme une mesure en enseignement. Il attend d'avoir assez de
 journal pour dire quelque chose de vrai — d'où sa place ici et pas plus haut.
 
-### 4. Git
+### 3. Git
 
 Un dépôt dans un état donné, un état cible, on compte les commandes. La mesure
 est exacte — l'état d'un dépôt se compare comme deux chaînes.
@@ -88,7 +86,7 @@ Repoussé ici pour son coût — il faut un git en mémoire (`isomorphic-git`) e
 terminal simulé — et parce que Learn Git Branching couvre déjà l'essentiel
 gratuitement. Fort levier, gros chantier, concurrent sérieux.
 
-### 5. Le terminal
+### 4. Le terminal
 
 Un arbre de fichiers, une question, une réponse exacte : « combien de fichiers
 contiennent X ? ». `grep`, `find`, `sed`, les tubes.

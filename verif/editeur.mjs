@@ -23,6 +23,7 @@ const { EditorView, drawSelection, keymap, lineNumbers, highlightActiveLine } = 
 const { defaultKeymap, history, historyKeymap } = await import('@codemirror/commands');
 const { javascript } = await import('@codemirror/lang-javascript');
 const { raccourcisKata } = await import('../src/banc/raccourcis.ts');
+const { themeEditeur } = await import('../src/banc/theme.ts');
 const { insertBracket } = await import('@codemirror/autocomplete');
 const { KATAS } = await import('../src/katas/index.ts');
 
@@ -50,6 +51,9 @@ function monter(doc) {
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         javascript(),
+        // Sans liaison de touche, mais monte quand meme : « exactement les
+        // memes extensions » doit rester vrai, sinon la phrase ne vaut rien.
+        themeEditeur(),
       ],
     }),
     parent: hote,

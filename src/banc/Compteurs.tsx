@@ -7,7 +7,7 @@
  * les compteurs se permettent.
  */
 import { useEffect, useState } from 'react';
-import { observer, type Mesures } from './journal';
+import { lire, observer, type Mesures } from './journal';
 
 const chrono = (ms: number) => {
   const s = Math.floor(ms / 1000);
@@ -26,7 +26,10 @@ function Compteur({ valeur, etiquette, alerte }: { valeur: string; etiquette: st
 }
 
 export default function Compteurs() {
-  const [m, setM] = useState<Mesures | null>(null);
+  // Partir des mesures reelles et non de `null` : rendre `null` au premier
+  // passage retirait un element de l'en-tete le temps d'une image, et les deux
+  // autres se replacaient sous les yeux a chaque epreuve.
+  const [m, setM] = useState<Mesures>(lire);
   const [, battre] = useState(0);
 
   useEffect(() => observer(setM), []);
@@ -34,12 +37,10 @@ export default function Compteurs() {
   // Le journal n'émet que sur transaction : sans ce battement, le chronomètre
   // resterait figé entre deux frappes.
   useEffect(() => {
-    if (!m?.enCours) return;
+    if (!m.enCours) return;
     const id = setInterval(() => battre((n) => n + 1), 250);
     return () => clearInterval(id);
-  }, [m?.enCours]);
-
-  if (!m) return null;
+  }, [m.enCours]);
 
   return (
     <div className="compteurs" style={{ opacity: m.enCours ? 1 : 0.5 }}>

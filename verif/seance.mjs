@@ -1,5 +1,5 @@
 import { acquis, bilan, carte, tirer, SEUIL_ACQUIS, TAILLE_SEANCE } from '../src/banc/seance.ts';
-import { EPREUVES as KATAS } from '../src/banc/epreuves.ts';
+import { EPREUVES as KATAS, cout } from '../src/banc/epreuves.ts';
 
 let ok = 0, ko = 0;
 const v = (nom, attendu, obtenu) => {
@@ -23,6 +23,27 @@ v('bon essai trop ancien -> pas acquis', false,
 // --- tirer ------------------------------------------------------------------
 v(`une seance fait ${TAILLE_SEANCE} katas`, TAILLE_SEANCE, tirer(KATAS, TAILLE_SEANCE, {}).length);
 v('aucun kata en double', TAILLE_SEANCE, new Set(tirer(KATAS, TAILLE_SEANCE, {}).map((k) => k.id)).size);
+
+// La toute premiere seance fait le TOUR du produit. « Le moins cher d'abord »
+// etait la bonne regle avec un seul banc ; avec quatre, le banc le plus fourni
+// occupait tout -- vingt-six lectures repoussaient la premiere navigation a la
+// septieme seance, soit un quart du produit invisible pendant une semaine.
+{
+  const premiere = tirer(KATAS, TAILLE_SEANCE, {});
+  const bancs = [...new Set(KATAS.map((k) => k.banc))];
+  v('la premiere seance touche tous les bancs', bancs.length,
+    new Set(premiere.map((k) => k.banc)).size);
+  // L'alternance ne doit pas casser l'ordre a l'interieur d'un banc : la
+  // premiere epreuve d'edition reste la moins chere des epreuves d'edition.
+  const parBancTrie = (b) =>
+    KATAS.filter((k) => k.banc === b).sort((a, c) => cout(a) - cout(c))[0].id;
+  v('et sert, dans chaque banc, son epreuve la moins chere', [],
+    bancs.filter((b) => premiere.find((k) => k.banc === b).id !== parBancTrie(b)));
+}
+// Sans hasard : deux tirages au meme etat rendent exactement la meme seance.
+v('le tirage est reproductible',
+  tirer(KATAS, TAILLE_SEANCE, {}).map((k) => k.id),
+  tirer(KATAS, TAILLE_SEANCE, {}).map((k) => k.id));
 
 // Priorite 1 : ce qui n'a jamais ete vu passe devant tout le reste.
 const toutAcquisSaufUn = Object.fromEntries(
@@ -108,10 +129,16 @@ v('un geste montre ne compte pas comme tenu', ['b'], avecIndice.tenus.map((e) =>
 // Le compte par banc plutot qu'un total en dur : il reste juste quand on ajoute
 // du contenu, et il attrape quand meme la perte d'un banc entier.
 const parBanc = (b) => KATAS.filter((k) => k.banc === b).length;
-v('les trois bancs sont peuples', true,
-  parBanc('edition') >= 8 && parBanc('lecture') >= 6 && parBanc('debogage') >= 6);
+// La liste est declaree ici, et c'est volontaire : ajouter un banc DOIT se
+// decider, pas se constater. Mais les deux assertions se derivent d'elle, si
+// bien qu'un banc de plus ne casse plus le compte -- la version precedente
+// enumerait les trois bancs en dur dans le total, et le quatrieme l'a cassee.
+const BANCS = ['edition', 'lecture', 'debogage', 'navigation'];
+v('chaque banc declare est peuple', true, BANCS.every((b) => parBanc(b) >= 6));
+v('aucune epreuve n’appartient a un banc non declare', [],
+  [...new Set(KATAS.map((k) => k.banc))].filter((b) => !BANCS.includes(b)));
 v('le total est la somme des bancs', KATAS.length,
-  parBanc('edition') + parBanc('lecture') + parBanc('debogage'));
+  BANCS.reduce((n, b) => n + parBanc(b), 0));
 v('aucun id en double', KATAS.length, new Set(KATAS.map((k) => k.id)).size);
 v('chaque epreuve enseigne un geste nomme', true, KATAS.every((k) => k.geste.length > 10));
 v('les katas ont depart != cible', true,
