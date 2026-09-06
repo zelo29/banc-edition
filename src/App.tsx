@@ -49,6 +49,7 @@ import {
   jourLocal,
   marquer,
 } from './banc/assiduite';
+import { ajouter, chargerTraces, enregistrerTraces, resumer } from './banc/traces';
 import { TOUCHES_VOLEES } from './banc/raccourcis';
 
 /**
@@ -89,6 +90,12 @@ export default function App() {
   // que je progresse » ; ceci répond à la seule question qui décide de tout —
   // est-ce que j'y reviens.
   const [jours, setJours] = useState<string[]>(chargerJours);
+
+  // Le résumé de chaque épreuve, gardé pour le coach qui n'existe pas encore.
+  // C'est le seul point de la roadmap qui ait une urgence propre : une séance
+  // faite avant ce stockage est perdue pour toujours, puisqu'on ne peut pas
+  // rejouer hier pour en extraire des gestes qu'on n'a pas enregistrés.
+  const [, setTraces] = useState(chargerTraces);
 
   const [texte, setTexte] = useState(() => {
     const e = seance[0];
@@ -174,6 +181,24 @@ export default function App() {
       setFini(faite);
       setFaites((f) => [...f, faite]);
       setSerie((s) => [...s, faite.efficacite]);
+
+      // Un seul point d'enregistrement pour les quatre bancs. La durée vient de
+      // l'étape et non des mesures : sur une lecture, une navigation ou le
+      // diagnostic d'un débogage, l'éditeur n'a rien chronométré — c'est le
+      // chronomètre de présence qui tient le temps, et les gestes sont vides.
+      // Sur une édition les deux coïncident.
+      setTraces((t) => {
+        const suite = ajouter(
+          t,
+          resumer(
+            { id: faite.kataId, banc: faite.banc },
+            { ...lire(), duree: faite.duree },
+            { minimum: faite.minimum, reel: faite.reel },
+          ),
+        );
+        enregistrerTraces(suite);
+        return suite;
+      });
       setHistorique((h) => {
         const suite = {
           ...h,

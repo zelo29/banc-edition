@@ -79,6 +79,12 @@ Pas un banc non plus. Il lit le journal des gestes et nomme le motif :
 « tu retapes des lignes entières au lieu de les déplacer »,
 « tu prends la souris dès que la sélection dépasse une ligne ».
 
+La matière, elle, n'attend plus : le journal des gestes ne survivait à rien —
+`armer()` le vidait à chaque épreuve — et une séance faite sans lui est perdue
+pour toujours. Chaque épreuve laisse maintenant une trace résumée, choisie pour
+les motifs ci-dessus. C'est le seul point de cette liste qui avait une urgence
+propre, et il est fait.
+
 C'est ce qui transforme une mesure en enseignement. Il attend d'avoir assez de
 journal pour dire quelque chose de vrai — d'où sa place ici et pas plus haut.
 

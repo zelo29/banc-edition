@@ -413,6 +413,66 @@ Deux choses à savoir :
 - le `base` de Vite déplace l'adresse de développement vers
   `localhost:5180/banc-edition/`. La racine y redirige toute seule.
 
+## Ce qui reste d'une épreuve
+
+Le journal des gestes ne survivait à rien. `armer()` vide `gestes` au début de
+chaque épreuve, et `EtapeFaite` ne garde que des totaux — durée, frappes,
+souris, efficacité. Or le coach annoncé par la roadmap doit pouvoir dire « tu
+retapes des lignes entières au lieu de les déplacer » ou « tu prends la souris
+dès que la sélection dépasse une ligne », et **aucune de ces deux phrases ne se
+déduit d'un total.**
+
+C'est le seul point de la roadmap qui ait une urgence propre : **une séance
+faite avant ce stockage est perdue pour toujours.** On ne peut pas rejouer hier
+pour en extraire des gestes qu'on n'a pas enregistrés. Le coach, lui, peut
+attendre d'avoir de quoi dire quelque chose de vrai — la matière, non.
+
+### On ne garde pas le journal, on le résume
+
+Un kata produit cent à deux cents gestes. Cinq épreuves par jour, reprises
+comprises, font près de quinze mille gestes par mois — une quinzaine de
+mégaoctets par an, dans un `localStorage` qui en offre cinq. Garder le flux brut
+n'est pas une option prudente qu'on aurait écartée par élégance : c'est une
+option qui casse.
+
+La contrepartie est réelle et il faut la dire : **ce qui n'est pas résumé
+aujourd'hui n'existera jamais.** Le choix des champs est donc le choix de ce que
+le coach saura voir, et il se fait maintenant :
+
+| champ | le motif qu'il rend visible |
+|---|---|
+| `minimum` / `reel` | « tu retapes une ligne entière pour changer un mot » |
+| `evenements` | « tu prends la souris », « tu hésites », « tu colles » |
+| `rafaleArriere` | « tu effaces caractère par caractère » |
+| `duree` | la vitesse, banc par banc |
+
+`rafaleArriere` est le seul champ de séquence retenu, et c'est délibéré : c'est
+le seul motif qu'aucun total ne permet de reconstruire. Quarante
+`delete.backward` d'affilée et quarante répartis dans l'épreuve donnent le même
+compteur et ne racontent pas la même chose.
+
+Au-delà de deux mille traces — deux cent cinquante jours de séances
+quotidiennes — les plus anciennes partent. Un coach qui décrit comment tu
+travaillais il y a un an décrit quelqu'un d'autre.
+
+### Le nom des annotations est une dépendance, pas un détail
+
+Tout le produit repose sur des chaînes de caractères décidées par une
+bibliothèque tierce : `delete.backward`, `select.pointer`, `input.paste`. Le
+jour où l'une d'elles change, **rien ne casse** — les compteurs tombent
+silencieusement à zéro et le coach n'a plus rien à dire.
+
+`verif/journal-reel.mjs` monte donc le vrai éditeur avec la vraie extension de
+journal, envoie de **vraies touches**, et résume ce qui en sort. C'est la seule
+preuve que ce qu'on enregistre aujourd'hui sera lisible demain.
+
+Il a immédiatement rendu deux choses. La distinction souris/clavier annoncée
+plus haut est bien réelle, mais pas comme le harnais synthétique le croyait :
+une sélection au clavier porte `select`, et une transaction **sans annotation du
+tout** est écartée par le journal comme sélection programmatique. Le repli
+`|| 'selection'` du résumé ne couvrait donc qu'un cas qui ne se produit jamais —
+et un test l'affirmait. Les deux ont sauté.
+
 ## Un kata = deux fichiers
 
 `depart` et `cible`. La cible **est** le test : pas de suite de tests, pas de
