@@ -5,6 +5,19 @@
  * premier a besoin d'un éditeur, le second a besoin de trois choses et pas une
  * de plus : la liste des fichiers, celui qu'on a ouvert, et une recherche.
  *
+ * TOUT SE FAIT AU CLAVIER, et ce n'était pas le cas.
+ *
+ * La première version n'offrait que le clic pour changer de fichier — sur un
+ * banc dont toute la promesse est le geste, et qui pénalise la souris partout
+ * ailleurs. Un banc qui entraîne à chercher dans un arbre et qui n'offre que la
+ * souris pour l'ouvrir n'entraîne pas à chercher : il entraîne à cliquer.
+ * `depot-clavier.ts` porte les touches, choisies chez VS Code pour qu'elles
+ * servent ailleurs qu'ici.
+ *
+ * Les numéros sont écrits en face des fichiers. Un raccourci qu'on ne voit pas
+ * n'existe pas : il faudrait le lire dans un README pour s'en servir, et
+ * personne ne lit un README au milieu d'un chronomètre.
+ *
  * LA RECHERCHE NE DOIT PAS RÉPONDRE À LA PLACE DU LECTEUR, et elle n'est pas
  * bridée pour autant. Elle fait exactement ce que fait celle d'un éditeur —
  * compter les correspondances par fichier — et ce sont les épreuves qui sont
@@ -12,14 +25,10 @@
  * `DELAI_MAX`, un seul le déclare. Brider l'outil aurait entraîné à naviguer
  * dans un dépôt qui n'existe pas ; le harnais vérifie donc plutôt qu'aucune
  * épreuve ne se résout par une recherche naïve.
- *
- * Le compteur par fichier est le seul élément d'interface qui enseigne quelque
- * chose ici : voir « 3 · 1 · 1 · 1 » réparti sur quatre fichiers est
- * exactement l'information qu'on lit dans un vrai dépôt, et apprendre à ne pas
- * ouvrir le fichier qui en a le plus est une bonne partie du geste.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Code } from './Question';
+import { actionDepot, suivant } from './depot-clavier';
 import type { Fichier } from '../navigations/index';
 
 /** Le nombre de correspondances, insensible à la casse comme celle d'un éditeur. */
@@ -35,6 +44,7 @@ function compter(code: string, quoi: string): number {
 export default function Depot({ fichiers, cle }: { fichiers: Fichier[]; cle: string }) {
   const [ouvert, setOuvert] = useState(0);
   const [recherche, setRecherche] = useState('');
+  const champ = useRef<HTMLInputElement>(null);
 
   // `cle` remet l'arbre à zéro quand l'épreuve change : sans ça, on repartait
   // sur le fichier ouvert à l'épreuve précédente, et avec sa recherche encore
@@ -45,6 +55,35 @@ export default function Depot({ fichiers, cle }: { fichiers: Fichier[]; cle: str
     setOuvert(0);
     setRecherche('');
   }
+
+  useEffect(() => {
+    const clavier = (e: KeyboardEvent) => {
+      const dansRecherche = e.target === champ.current;
+      const action = actionDepot(e, fichiers.length, dansRecherche);
+      if (!action) return;
+      e.preventDefault();
+
+      if (action.quoi === 'ouvrir') setOuvert(action.index);
+      else if (action.quoi === 'deplacer') setOuvert((n) => suivant(n, action.pas, fichiers.length));
+      // `focus()` avant `select()` : la sélection seule ne donne pas le focus de
+      // façon fiable, et Ctrl+P sélectionnait donc le texte d'un champ où l'on
+      // n'écrivait pas — la frappe suivante partait dans la réponse.
+      else if (action.quoi === 'chercher') {
+        champ.current?.focus();
+        champ.current?.select();
+      }
+      else {
+        // Le champ de réponse appartient à `Question`, qui est un frère rendu
+        // par `App`. Le viser par le DOM plutôt que de faire descendre une ref
+        // à travers deux composants pour une seule ligne : la classe est
+        // stable, et le couplage inverse serait pire que celui-ci.
+        champ.current?.blur();
+        document.querySelector<HTMLInputElement>('.reponse input')?.focus();
+      }
+    };
+    window.addEventListener('keydown', clavier);
+    return () => window.removeEventListener('keydown', clavier);
+  }, [fichiers.length]);
 
   const trouvailles = useMemo(
     () => fichiers.map((f) => compter(f.code, recherche)),
@@ -63,10 +102,11 @@ export default function Depot({ fichiers, cle }: { fichiers: Fichier[]; cle: str
       <div className="depot">
         <div className="depot-arbre">
           <input
+            ref={champ}
             className="depot-recherche"
             type="search"
             value={recherche}
-            placeholder="chercher dans le dépôt"
+            placeholder="chercher — Ctrl+P"
             aria-label="chercher dans le dépôt"
             onChange={(e) => setRecherche(e.target.value)}
           />
@@ -78,6 +118,7 @@ export default function Depot({ fichiers, cle }: { fichiers: Fichier[]; cle: str
                   className={i === ouvert ? 'ouvert' : undefined}
                   onClick={() => setOuvert(i)}
                 >
+                  {i < 9 && <kbd className="depot-touche">{i + 1}</kbd>}
                   <span className="depot-chemin">{f.chemin}</span>
                   {trouvailles[i] > 0 && <span className="depot-compte">{trouvailles[i]}</span>}
                 </button>

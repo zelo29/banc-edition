@@ -106,6 +106,83 @@ contiennent X ? ». `grep`, `find`, `sed`, les tubes.
 Mesurable proprement, mais moins de levier que le reste : la plupart des gens
 s'en sortent avec trois commandes et un moteur de recherche.
 
+## Le centre d'entraînement : ce qui reste à optimiser
+
+Cette section vient d'avoir lancé le banc et de l'avoir regardé, pas de l'avoir
+imaginé. Elle est classée par gain sur la seule chose qui compte ici : le temps
+entre deux gestes, et ce qui reste dans les doigts après.
+
+### 1. L'écran est vide à 80 %
+
+Cinq lignes de code en médiane, dans 1440 × 900. Le départ et la cible sont à
+**huit cents pixels** l'un de l'autre : chaque comparaison est une saccade
+complète, répétée à chaque essai. C'est le seul coût de vitesse purement visuel
+du banc, et c'est le plus gros.
+
+À faire : empiler verticalement tant que l'épreuve tient sous une douzaine de
+lignes — la cible au-dessus du départ, colonnes alignées — et plafonner la
+largeur du code. Comparer deux lignes superposées ne coûte rien ; comparer deux
+lignes séparées d'un demi-écran coûte à chaque fois.
+
+### 2. Le retour est immédiat et permanent, et c'est un défaut
+
+La littérature de l'apprentissage moteur est nette là-dessus, et à contre-sens
+de l'intuition : **un retour fréquent et immédiat améliore la performance
+pendant l'entraînement et dégrade l'apprentissage.** L'apprenant devient
+dépendant du signal externe et ne construit plus son propre repère — c'est
+l'*hypothèse de guidage*, et elle est mesurée en test de rétention, pas en test
+de performance.
+
+Ici la cible reste affichée en permanence. On recopie au lieu de reconstruire.
+
+À faire : un mode où la cible s'efface à la première frappe et se rappelle d'une
+touche — chaque rappel étant **compté**. « Trois coups d'œil » est une mesure
+honnête, exactement du même genre que « huit souris », et elle enseigne la même
+chose.
+
+### 3. Aucun objectif juste au-dessus du niveau
+
+C'est la définition même de la pratique délibérée : une cible légèrement
+au-dessus de ce qu'on sait faire, et un retour sur l'écart. Le banc sert la même
+épreuve quel que soit le niveau, et **le record personnel est déjà dans
+l'historique — il ne s'affiche nulle part.**
+
+À faire : pendant l'épreuve, « ton record : 12 s · 84 % ». Le chronomètre passe
+d'un compteur à un objectif pour le prix d'un `Math.min`.
+
+### 4. « Tenu » ne distingue pas la performance de l'apprentissage
+
+`acquis()` regarde les trois derniers essais et cherche un dépassement du seuil.
+Il ne regarde ni la date, ni si l'indice était affiché à l'essai d'avant. Tenir
+un geste trente secondes après l'avoir vu montré n'est pas le tenir : c'est de
+la mémoire de travail, et elle sera vide demain.
+
+À faire : un geste n'est tenu que s'il a été tenu **sans indice** et à **au moins
+un jour** du dernier essai. C'est le test de rétention, et c'est trois lignes.
+
+### 5. Rien ne rappelle ce qui a été raté hier
+
+Le bilan tombe en fin de séance, quand on s'en va. À l'ouverture, rien. Or la
+reprise espacée de l'échec de la veille est le dispositif d'apprentissage le
+mieux établi qui soit.
+
+À faire : la première épreuve de la séance est celle qu'on a ratée hier. Le
+tirage sait déjà la trouver — la dette passe en tête — mais rien ne la
+**nomme**, et un rappel non nommé n'est pas un rappel.
+
+### 6. Deux sorties sont encore des boutons
+
+« Je ne sais pas — montre-moi » et « répondre » n'ont pas de touche. Sur un banc
+qui pénalise la souris partout ailleurs, la sortie honnête ne peut pas être le
+seul endroit où il faut cliquer. Entrée valide déjà ; il manque la touche qui
+renonce.
+
+### 7. Le banc ne s'ouvre toujours pas en un geste
+
+`.github/workflows/pages.yml` est écrit, il n'est pas poussé, et Pages n'est pas
+activé. Tant que ça dure, tout ce qui précède reste théorique : le blocage de ce
+projet n'a jamais été la justesse de la mesure.
+
 ## Les domaines voisins entrent par le contenu, pas par un banc
 
 Data et sécurité comptent énormément et sont, tous les deux, **les domaines les

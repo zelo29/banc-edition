@@ -73,8 +73,28 @@ function Code({ source, langage }: { source: string; langage: Langage }) {
     // de la gouttiere gardent la hauteur devinee a la construction et les
     // numeros de ligne finissent tasses en haut, a cote du code qu'ils numerotent.
     const mesure = requestAnimationFrame(() => vue.requestMeasure());
+
+    // Cette reprise unique vise UN instant, devine. Dans le banc de navigation
+    // la vue monte a l'interieur d'une grille dont la colonne n'a pas encore sa
+    // largeur, et rien ne garantit que la mise en page soit posee a la frame
+    // suivante. On observe donc la taille de l'hote en plus : toute mise en
+    // page ulterieure redemande une mesure, sans avoir a trouver le bon moment.
+    //
+    // A verifier dans un vrai navigateur : le desalignement qui a motive ceci a
+    // ete vu sur une capture Firefox headless, ou la capture est prise des le
+    // chargement -- avant meme que le `requestAnimationFrame` ci-dessus ait pu
+    // agir. C'est donc peut-etre un artefact de ce mode de rendu et pas un
+    // defaut du produit. La garde ne coute rien et reste juste dans les deux
+    // cas ; l'affirmation contraire, elle, n'aurait pas ete verifiee.
+    const observateur =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(() => vue.requestMeasure());
+    if (hote.current) observateur?.observe(hote.current);
+
     return () => {
       cancelAnimationFrame(mesure);
+      observateur?.disconnect();
       vue.destroy();
     };
   }, [source, langage]);

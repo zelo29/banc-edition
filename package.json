@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "verif": "node verif/contrat-codemirror.cjs && node verif/score.mjs && node verif/seance.mjs && node verif/gestes.mjs && node verif/editeur.mjs && node --disable-warning=ExperimentalWarning verif/lecture.mjs && node verif/debogage.mjs && node verif/chrono.mjs && node verif/repetition.mjs && node verif/navigation.mjs && node verif/assiduite.mjs && node verif/traces.mjs && node verif/journal-reel.mjs"
+    "verif": "node verif/contrat-codemirror.cjs && node verif/score.mjs && node verif/seance.mjs && node verif/gestes.mjs && node verif/editeur.mjs && node --disable-warning=ExperimentalWarning verif/lecture.mjs && node verif/debogage.mjs && node verif/chrono.mjs && node verif/repetition.mjs && node verif/navigation.mjs && node verif/assiduite.mjs && node verif/traces.mjs && node verif/journal-reel.mjs && node verif/depot-clavier.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",

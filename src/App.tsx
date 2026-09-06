@@ -726,7 +726,18 @@ export default function App() {
               : epreuve.banc === 'debogage'
                 ? 'remonte du symptôme à la ligne, puis tu la répareras'
                 : ''}
+            {/* La légende des touches du banc en cours. Un raccourci qu'on ne
+                voit pas n'existe pas : il faudrait le lire dans un README au
+                milieu d'un chronomètre, ce que personne ne fait. On n'affiche
+                que celles qui servent ICI — une liste complète serait du décor
+                qu'on cesse de lire au bout de deux séances. */}
             <span className="detail">
+              {epreuve.banc === 'navigation' && (
+                <>
+                  <kbd>Ctrl+P</kbd> chercher <kbd>Alt+1…9</kbd> ouvrir{' '}
+                  <kbd>Alt+↓</kbd> suivant ·{' '}
+                </>
+              )}
               <kbd>Ctrl+Entrée</kbd> recommencer
             </span>
           </div>

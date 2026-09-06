@@ -655,3 +655,22 @@ kbd {
   padding: 0.15em 0.45em;
   white-space: nowrap;
 }
+
+/* Le numero du fichier, en face de son nom : c'est ce qui rend Alt+1..9
+   utilisable. Un raccourci qu'on ne voit pas n'existe pas — il faudrait le lire
+   dans un README au milieu d'un chronometre. */
+.depot-touche {
+  flex: none;
+  min-width: 1.1rem;
+  padding: 0.05em 0.25em;
+  border: 1px solid var(--trait);
+  border-radius: 3px;
+  background: var(--fond);
+  color: var(--faible);
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  text-align: center;
+}
+.depot-arbre button.ouvert .depot-touche { color: var(--accent); border-color: var(--accent); }
+/* Le chemin prend la place restante, entre le numero et le compteur. */
+.depot-chemin { flex: 1; }
