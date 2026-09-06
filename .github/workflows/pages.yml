@@ -1,0 +1,53 @@
+# Le banc, publié à chaque poussée sur main.
+#
+# Rien à héberger et rien à payer : l'application est entièrement côté client et
+# garde son historique dans le localStorage du navigateur. Il n'y a ni compte ni
+# serveur, ce qui est aussi la position du projet — la mesure d'abord, le reste
+# jamais tant qu'elle n'est pas juste.
+#
+# Le harnais tourne AVANT la publication. Un banc dont une réponse est fausse
+# enseigne l'erreur : il vaut mieux ne rien publier que publier ça.
+name: publier le banc
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Une seule publication à la fois, et on laisse finir celle qui tourne.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  construire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Le harnais importe les sources .ts telles quelles : il demande le
+          # retrait des types sans transpilation, donc Node >= 22.18.
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run verif
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  publier:
+    needs: construire
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - id: deploiement
+        uses: actions/deploy-pages@v4

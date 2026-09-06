@@ -15,7 +15,7 @@ avec un retour immédiat.
 
 ```bash
 npm install
-npm run dev      # http://localhost:5180
+npm run dev      # http://localhost:5180/banc-edition/
 npm run verif    # le contrat CodeMirror, le score, la séance
 ```
 
@@ -362,6 +362,56 @@ l'intérieur d'un banc l'ordre reste du moins cher au plus cher.
 Un détail qui n'en est pas un : le coût d'une navigation se compte en
 **fichiers**, pas en lignes. Sommer les lignes de l'arbre suppose qu'on le lit en
 entier, ce qui est exactement le geste que le banc apprend à ne pas faire.
+
+## La présence
+
+Le reste du produit répond à « est-ce que je progresse ». Celui-ci répond à la
+seule question qui décide de tout : **est-ce que j'y reviens**. Un instrument de
+mesure parfait qu'on n'ouvre jamais ne fait progresser personne, et le critère
+de réussite n'a jamais été « la mesure est juste » mais « je l'ouvre tous les
+jours ».
+
+Ce n'est pas un score, et c'est ce qui lui donne le droit d'exister ici : des
+dates se vérifient. Le bilan annonce les jours d'affilée, le record, et les
+jours faits sur les sept derniers.
+
+**Le jour est local, jamais UTC.** `toISOString().slice(0, 10)` est le réflexe et
+il est faux : une séance faite à 00 h 30 à Paris s'enregistre la veille, une
+séance faite à 23 h à Auckland s'enregistre le lendemain. On perd ou on double
+un jour — et une série cassée par un fuseau horaire ne se rattrape pas, on ne
+peut pas refaire hier. Le harnais rejoue le calcul dans un processus réglé sur
+`Pacific/Auckland`, là où le réflexe se serait trompé d'un jour, et vérifie
+aussi que la veille du 30 mars survit au passage à l'heure d'été.
+
+**Le jour se marque à la séance terminée**, pas à l'ouverture de la page. Une
+série qu'on gagne en ouvrant un onglet ne mesure plus rien, et c'est la seule
+chose ici qu'on aurait envie de se mentir à soi-même.
+
+**Aucun zéro accusateur.** Manquer un jour est déjà ce qui fait abandonner ;
+l'annoncer en rouge finit le travail. La série reste donc vivante tout le
+lendemain — elle se sauve encore — et le rappel « série de 4 — à sauver »
+n'apparaît en tête que ce jour-là. Affiché tous les jours il deviendrait du
+décor ; affiché après coup il ne serait qu'un reproche.
+
+## Ouvrir en un geste
+
+Le blocage n'était pas la mesure, c'était le lancement : `cd`, `npm run dev`,
+puis ouvrir un navigateur. Trois décisions payées chaque jour, pour un outil
+dont tout le propos est de n'en demander aucune.
+
+`.github/workflows/pages.yml` publie le banc sur GitHub Pages à chaque poussée
+sur `main`, et il fait tourner `npm run verif` **avant** — un banc dont une
+réponse est fausse enseigne l'erreur, il vaut mieux ne rien publier que publier
+ça. Rien à héberger et rien à payer : l'application est entièrement côté client.
+
+Deux choses à savoir :
+
+- **`localStorage` est cloisonné par origine.** L'historique de
+  `localhost:5180` ne suivra pas sur le site publié. Il faut choisir lequel des
+  deux est LE banc — le publié, si on veut l'ouvrir tous les jours — et garder
+  `npm run dev` pour développer, pas pour s'entraîner.
+- le `base` de Vite déplace l'adresse de développement vers
+  `localhost:5180/banc-edition/`. La racine y redirige toute seule.
 
 ## Un kata = deux fichiers
 

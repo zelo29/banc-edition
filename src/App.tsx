@@ -42,6 +42,13 @@ import {
   montrerIndice,
   refaire,
 } from './banc/repetition';
+import {
+  assiduite,
+  chargerJours,
+  enregistrerJours,
+  jourLocal,
+  marquer,
+} from './banc/assiduite';
 import { TOUCHES_VOLEES } from './banc/raccourcis';
 
 /**
@@ -78,6 +85,11 @@ export default function App() {
   /** Reprises déjà consommées par la séance : la taille reste bornée. */
   const [reprises, setReprises] = useState(0);
 
+  // Les jours où la séance a été faite. Le reste du produit répond à « est-ce
+  // que je progresse » ; ceci répond à la seule question qui décide de tout —
+  // est-ce que j'y reviens.
+  const [jours, setJours] = useState<string[]>(chargerJours);
+
   const [texte, setTexte] = useState(() => {
     const e = seance[0];
     return e.banc === 'edition' ? e.depart : '';
@@ -96,6 +108,8 @@ export default function App() {
   const [diagnostic, setDiagnostic] = useState<{ duree: number; essais: number; revele: boolean } | null>(null);
 
   const epreuve = seance[etape];
+  /** Calculée ici et pas dans le bilan : les deux écrans en ont besoin. */
+  const presence = assiduite(jours);
 
   const ouvrir = useCallback((e: Epreuve, hist: Historique, numero = 0) => {
     setReparation(false);
@@ -127,6 +141,14 @@ export default function App() {
     if (etape + 1 >= seance.length) {
       setPhase('bilan');
       setFini(null);
+      // Le jour se marque à la séance TERMINÉE, pas à l'ouverture de la page.
+      // Une série qu'on gagne en ouvrant un onglet ne mesure plus rien, et
+      // c'est la seule chose ici qu'on aurait envie de se mentir à soi-même.
+      setJours((j) => {
+        const suite = marquer(j, jourLocal());
+        enregistrerJours(suite);
+        return suite;
+      });
       return;
     }
     setEtape(etape + 1);
@@ -346,6 +368,23 @@ export default function App() {
       <div className="ecran ecran-bilan">
         <div className="bilan">
           <p className="bilan-titre">séance terminée</p>
+
+          {/* La présence, juste sous le titre : c'est le seul endroit du produit
+              qui parle de demain. On annonce le nombre de jours d'affilée, et
+              jamais ce qui a été manqué — un reproche à cet instant précis est
+              exactement ce qui fait qu'on ne revient pas. */}
+          <p className="bilan-serie">
+            <b>
+              {presence.serie} jour{presence.serie > 1 ? 's' : ''} d’affilée
+            </b>
+            {presence.record > presence.serie && (
+              <span> · record {presence.record}</span>
+            )}
+            <span>
+              {' '}
+              · {presence.surSept} sur les 7 derniers
+            </span>
+          </p>
           <p className="bilan-chiffres">
             <span>{(b.duree / 1000).toFixed(0)} s</span>
             <span>{(b.efficacite * 100).toFixed(0)} % d’efficacité</span>
@@ -446,6 +485,15 @@ export default function App() {
               savoir pourquoi décourage plus vite que n'importe quel score. */}
           {serie.length > 0 && !fini && (
             <span className="reprise">reprise {serie.length + 1}</span>
+          )}
+          {/* Le rappel n'apparaît que le jour où il peut changer quelque chose :
+              une série encore vivante, et la séance du jour pas encore faite.
+              Affiché tous les jours il deviendrait du décor ; affiché après
+              coup il ne serait qu'un reproche. */}
+          {presence.etat === 'a-sauver' && (
+            <span className="a-sauver" title="la séance d’aujourd’hui n’est pas encore faite">
+              série de {presence.serie} — à sauver
+            </span>
           )}
         </div>
         {/* Pendant la réparation d'un débogage on ÉDITE : ce sont les frappes et

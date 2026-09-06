@@ -37,6 +37,12 @@ l'appelle, ce que personne n'importe. Une épreuve dont la réponse est affirmé
 plutôt que calculée est signalée nommément par le harnais — il en reste quatre
 sur cinquante-deux, et le fichier les nomme.
 
+**La présence** est en place, et c'est le point qui manquait le plus : les jours
+d'affilée, le record, les jours faits sur sept. Le blocage de ce projet n'a
+jamais été la justesse de la mesure — il est que l'outil ne s'ouvre pas. Un
+workflow publie donc le banc sur GitHub Pages à chaque poussée, harnais joué
+avant : il devient un signet au lieu d'un `npm run dev`.
+
 **La répétition** est en place, et c'est un mécanisme, pas un banc : une épreuve
 d'édition ratée est refaite tout de suite, sans son indice cette fois, jusqu'à
 trois essais et quatre reprises par séance. Seul le banc d'édition y a droit —

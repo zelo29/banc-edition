@@ -632,3 +632,26 @@ kbd {
   color: var(--navigation);
   border-color: color-mix(in srgb, var(--navigation) 45%, transparent);
 }
+
+/* --- L'assiduite -----------------------------------------------------------
+   Le seul endroit du produit qui parle de demain. On annonce les jours faits,
+   jamais ceux qui manquent : un reproche a la fin d'une seance est exactement
+   ce qui fait qu'on ne revient pas. */
+.bilan-serie {
+  margin: -0.35rem 0 0;
+  font-size: 0.72rem;
+  color: var(--faible);
+}
+.bilan-serie b { color: var(--encre); font-weight: 600; }
+
+/* Le rappel n'apparait que le jour ou il peut changer quelque chose : serie
+   encore vivante, seance du jour pas encore faite. */
+.a-sauver {
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  color: var(--fond);
+  background: var(--code-nombre, var(--accent));
+  border-radius: 3px;
+  padding: 0.15em 0.45em;
+  white-space: nowrap;
+}
